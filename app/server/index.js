@@ -36,6 +36,32 @@ const checkTUPCIDExists = async (TUPCID, table) => {
 };
 
 
+//check login
+
+// Helper function to check login credentials for both students and faculty
+const checkLogin = async (table, TUPCID, PASSWORD, accountType) => {
+  try {
+    const query = `SELECT * FROM ${table}_accounts WHERE TUPCID = ?`;
+    const [rows] = await connection.query(query, [TUPCID]);
+
+    if (rows.length === 0) {
+      return { accountType: null };
+    }
+
+    const user = rows[0];
+    const isPasswordMatch = await bcryptjs.compare(PASSWORD, user.PASSWORD);
+
+    if (isPasswordMatch) {
+      return { accountType };
+    } else {
+      return { accountType: null };
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 // FOR STUDENT REGISTRATION
 app.post('/studreg', (req, res) => {
   const {
@@ -441,34 +467,25 @@ app.put('/admin/:TUPCID', (req, res) => {
 });
 
 
-// LOGIN
-app.post('/login', (req, res) => {
+// Handle the login request
+app.post('/login', async (req, res) => {
   const { TUPCID, PASSWORD } = req.body;
-  let accountType = '';
 
-  checkLogin('student_accounts', TUPCID, PASSWORD, 'student')
-    .then((result) => {
-      if (result.accountType) {
-        accountType = result.accountType;
-      } else {
-        return checkLogin('faculty_accounts', TUPCID, PASSWORD, 'faculty');
-      }
-    })
-    .then((result) => {
-      if (result.accountType) {
-        accountType = result.accountType;
-      } else {
-        // Account not found in any of the tables
-        return res.status(404).send({ message: 'Account does not exist' });
-      }
-    })
-    .then(() => {
-      return res.status(200).send({ accountType });
-    })
-    .catch((err) => {
-      console.error('Error checking login in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
-    });
+  try {
+    const studentLoginResult = await checkLogin('student', TUPCID, PASSWORD, 'student');
+    const facultyLoginResult = await checkLogin('faculty', TUPCID, PASSWORD, 'faculty');
+
+    if (studentLoginResult.accountType === 'student') {
+      res.json({ accountType: 'student' });
+    } else if (facultyLoginResult.accountType === 'faculty') {
+      res.json({ accountType: 'faculty' });
+    } else {
+      res.status(404).json({ message: 'Account does not exist' });
+    }
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ message: 'An error occurred. Please try again later.' });
+  }
 });
 
 
