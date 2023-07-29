@@ -39,7 +39,7 @@ export default function UpdatePassword() {
       try {
         // Make a POST request to the server to update the password
         const response = await axios.put(`http://localhost:3001/updatepassword/${TUPCID}`, {
-          newPassword: PASSWORD,
+          PASSWORD: PASSWORD,
         });
 
         // If the request is successful, show a success message and redirect to the login page
