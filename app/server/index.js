@@ -6,8 +6,8 @@ const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
 const connection = require('./db');
 const bcryptjs = require('bcryptjs');
-const uuid = require('uuid'); // Import the uuid library for generating unique codes
 const nodemailer = require('nodemailer'); // Import nodemailer for sending emails
+
 
 
 const app = express();
@@ -532,7 +532,7 @@ const sendEmailToGSFEAccount = (GSFEACC, code) => {
     from: 'eos2022to2023@gmail.com',
     to: GSFEACC,
     subject: 'Forgot Password Code',
-    text: `Your unique code for password reset is: ${code}`,
+    text: `Good day! In order to update your password in the current account, please use the following 6-digit code: ${code}`,
   };
 
   transporter.sendMail(mailOptions, (err, info) => {
@@ -544,22 +544,8 @@ const sendEmailToGSFEAccount = (GSFEACC, code) => {
   });
 };
 
-// Generate unique code, store it in the database, and send it to the registered GSFE account via email
-const generateAndSendCode = async (TUPCID, GSFEACC) => {
-  try {
-    // Generate unique code using UUID library
-    const code = uuid.v4();
 
-    // Store the code in the database along with TUPCID and GSFEACC
-    const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code) VALUES (?, ?, ?)';
-    await connection.query(query, [TUPCID, GSFEACC, code]);
 
-    // Send the code to the registered GSFE account via email
-    sendEmailToGSFEAccount(GSFEACC, code);
-  } catch (err) {
-    console.error('Error generating and sending code:', err);
-  }
-};
 
 // FORGOT PASSWORD
 app.post('/forgotpassword', async (req, res) => {
@@ -576,11 +562,16 @@ app.post('/forgotpassword', async (req, res) => {
     }
   };
 
-  // Helper function to generate unique code, store it in the database, and send it to the provided GSFEACC
+  // Generate unique code, store it in the database, and send it to the registered GSFE account via email
   const generateAndSendCode = async (TUPCID, GSFEACC) => {
     try {
-      // Generate unique code using UUID library
-      const code = uuid.v4();
+      // Generate a random 6-digit number between 100000 and 999999 (inclusive)
+      const min = 100000;
+      const max = 999999;
+      const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
+
+      // Convert the random number to a 6-digit string by padding with leading zeros
+      const code = randomNumber.toString().padStart(6, '0');
 
       // Store the code in the database along with TUPCID and GSFEACC
       const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code) VALUES (?, ?, ?)';
@@ -597,34 +588,38 @@ app.post('/forgotpassword', async (req, res) => {
     }
   };
 
-  // Check if the TUPCID exists in the student_accounts table
-  checkTUPCIDExists(TUPCID, 'student_accounts')
-    .then((existsInStudents) => {
-      if (!existsInStudents) {
-        // If not found in student_accounts, check in faculty_accounts
-        return checkTUPCIDExists(TUPCID, 'faculty_accounts');
-      } else {
-        return true; // TUPCID exists in student_accounts
-      }
-    })
-    .then((existsInFaculty) => {
+  try {
+    // Check if TUPCID and GSFEACC are provided and not empty
+    if (!TUPCID || !GSFEACC) {
+      return res.status(400).send({ message: 'TUPCID and GSFEACC are required fields' });
+    }
+
+    // Check if the TUPCID exists in the student_accounts table
+    const existsInStudents = await checkTUPCIDExists(TUPCID, 'student_accounts');
+    if (!existsInStudents) {
+      // If not found in student_accounts, check in faculty_accounts
+      const existsInFaculty = await checkTUPCIDExists(TUPCID, 'faculty_accounts');
       if (!existsInFaculty) {
         return res.status(404).send({ message: 'TUPCID does not exist' });
-      } else {
-        // TUPCID exists, generate unique code, store it in the database, and send it to the GSFE account
-        return generateAndSendCode(TUPCID, GSFEACC);
       }
-    })
-    .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Failed to check TUPCID in the database' });
-    });
+    }
+
+    // TUPCID exists, generate unique code, store it in the database, and send it to the GSFE account
+    return await generateAndSendCode(TUPCID, GSFEACC);
+  } catch (err) {
+    console.error('Error checking TUPCID in the database:', err);
+    return res.status(500).send({ message: 'Failed to check TUPCID in the database' });
+  }
 });
+
 
 
 //match coding...
 
 // POST request to check if the inputted code matches the code received on the user's email
+// Check if the inputted code matches the code received on the user's email
+// POST request to check if the inputted code matches the code received on the user's email
+// Check if the inputted code matches the code received on the user's email
 app.post('/matchcode', async (req, res) => {
   const { TUPCID, code } = req.body;
 
@@ -654,6 +649,8 @@ app.post('/matchcode', async (req, res) => {
     return res.status(500).send({ message: 'Database error' });
   }
 });
+
+
 
 
 //for server

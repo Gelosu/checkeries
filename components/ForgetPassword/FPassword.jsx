@@ -1,5 +1,6 @@
 "use client"
 
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -27,7 +28,8 @@ export default function ForgotPassword() {
       if (data.message === "Code sent to GSFE Account") {
         // Success, show the success message when code is sent
         setResponseMessage("Code sent successfully. Please check your GSFE Account.");
-        router.push("/matchcode"); // Redirect to the MatchCode page after code is sent
+        // Redirect to the MatchCode page with TUPCID as a query parameter
+        router.push(`/matchcode?TUPCID=${TUPCID}`);
       } else {
         // Show other successful response messages or error messages from the API
         setResponseMessage(data.message);
@@ -40,6 +42,7 @@ export default function ForgotPassword() {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">

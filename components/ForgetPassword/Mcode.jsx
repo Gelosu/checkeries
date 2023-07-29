@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -8,6 +8,18 @@ const MatchCode = () => {
   const router = useRouter();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [TUPCID, setTUPCID] = useState('');
+
+  useEffect(() => {
+    // Check if the router.query object exists and if TUPCID is available
+    if (router.query.TUPCID) {
+      setTUPCID(router.query.TUPCID);
+    } else {
+      // If TUPCID is not available, handle the error or redirect to another page
+      // For example, you can redirect to the ForgotPassword page if TUPCID is not available
+      router.push('/login/ForgetPassword');
+    }
+  }, [router.query.TUPCID]);
 
   const handleCodeMatch = async (event) => {
     event.preventDefault();
@@ -15,14 +27,20 @@ const MatchCode = () => {
     try {
       // Make a POST request to the backend to match the code
       const response = await axios.post('http://localhost:3001/matchcode', {
+        TUPCID: TUPCID,
         code: code,
       });
 
-      // If the code matches, redirect to the UpdatePassword page
-      router.push('/updatepassword');
+      // Assuming the server returns a JSON object with a 'status' field
+      if (response.data.status === 'success') {
+        // If the code matches, redirect to the UpdatePassword page
+        router.push('/login/ForgetPassword/UpdatePassword');
+      } else {
+        setError('Invalid code. Please check the code and try again.');
+      }
     } catch (error) {
-      // Handle the error if the code doesn't match or other server errors
-      setError('Invalid code. Please check the code and try again.');
+      // Handle the error if there is a network issue or other server errors
+      setError('An error occurred. Please try again later.');
       console.error('Error during code matching:', error);
     }
   };
