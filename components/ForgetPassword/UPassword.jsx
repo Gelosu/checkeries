@@ -1,21 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // Import the useRouter hook from 'next/router'
 import axios from "axios";
 
 export default function UpdatePassword() {
-  const router = useRouter();
+  const router = useRouter(); // Use the useRouter hook to access the router object
   const [TUPCID, setTUPCID] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [PASSWORD, setPASSWORD] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMatch, setPasswordMatch] = useState(true); // Track if passwords match
+  const [passwordMatch, setPasswordMatch] = useState(true); 
 
   useEffect(() => {
-    // Extract the TUPCID from the URL query parameter if it exists
-    const TUPCIDFromQuery = router.query?.TUPCID;
-    if (TUPCIDFromQuery) {
-      setTUPCID(TUPCIDFromQuery);
+    // Check if the router.query object has been populated
+    if (router.query && router.query.TUPCID) {
+      setTUPCID(router.query.TUPCID);
     }
   }, [router.query]);
 
@@ -23,7 +22,7 @@ export default function UpdatePassword() {
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     if (name === "newPassword") {
-      setNewPassword(value);
+      setPASSWORD(value);
     } else if (name === "confirmPassword") {
       setConfirmPassword(value);
     }
@@ -33,23 +32,20 @@ export default function UpdatePassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Check if the passwords match
-    if (newPassword === confirmPassword) {
+    if (PASSWORD === confirmPassword) {
       // Disable the submit button to prevent multiple submissions
       e.target.disabled = true;
 
       try {
-        console.log(TUPCIDFromQuery)
         // Make a POST request to the server to update the password
-        const response = await axios.post("http://localhost:3001/updatepassword", {
-          TUPCID: TUPCID,
-          newPassword: newPassword,
+        const response = await axios.put(`http://localhost:3001/updatepassword/${TUPCID}`, {
+          newPassword: PASSWORD,
         });
 
         // If the request is successful, show a success message and redirect to the login page
         alert(response.data.message);
         // Redirect to the login page after successful password update
         // Implement the redirect logic here
-
       } catch (error) {
         // If there is an error, show an error message
         console.error("Error updating password:", error);
@@ -70,7 +66,7 @@ export default function UpdatePassword() {
             name="newPassword"
             className="w-75 py-1 px-3 border border-dark rounded text-center"
             placeholder="NEW PASSWORD"
-            value={newPassword}
+            value={PASSWORD}
             onChange={handlePasswordChange}
           />
           <input
@@ -88,7 +84,7 @@ export default function UpdatePassword() {
             <button
               type="submit"
               className="btn btn-outline-dark"
-              disabled={newPassword !== confirmPassword} // Disable the button if passwords don't match
+              disabled={PASSWORD !== confirmPassword} // Disable the button if passwords don't match
             >
               SUBMIT
             </button>

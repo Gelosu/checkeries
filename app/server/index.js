@@ -710,21 +710,23 @@ const updatePassword = async (table, TUPCID, newPassword) => {
 };
 
 // PASSWORD UPDATE
-app.post('/updatepassword', async (req, res) => {
-  const { TUPCID, newPassword } = req.body;
+// PASSWORD UPDATE
+app.put('/updatepassword/:TUPCID', async (req, res) => {
+  const TUPCIDFromParams = req.params.TUPCID; // Get the TUPCID from the request params
+  const { newPassword } = req.body;
 
   try {
     // Check if the TUPCID exists in the student_accounts table
-    const existsInStudent = await checkTUPCIDExists(TUPCID, 'student_accounts');
+    const existsInStudent = await checkTUPCIDExists(TUPCIDFromParams, 'student_accounts');
     if (existsInStudent) {
-      await updatePassword('student_accounts', TUPCID, newPassword);
+      await updatePassword('student_accounts', TUPCIDFromParams, newPassword);
       return res.status(200).send({ message: 'Password updated successfully' });
     }
 
     // Check if the TUPCID exists in the faculty_accounts table
-    const existsInFaculty = await checkTUPCIDExists(TUPCID, 'faculty_accounts');
+    const existsInFaculty = await checkTUPCIDExists(TUPCIDFromParams, 'faculty_accounts');
     if (existsInFaculty) {
-      await updatePassword('faculty_accounts', TUPCID, newPassword);
+      await updatePassword('faculty_accounts', TUPCIDFromParams, newPassword);
       return res.status(200).send({ message: 'Password updated successfully' });
     }
 
@@ -734,6 +736,13 @@ app.post('/updatepassword', async (req, res) => {
     return res.status(500).send({ message: 'Failed to update password' });
   }
 });
+
+
+
+
+
+
+
 
 //FIND ACCOUNT TYPE
 const findAccountType = async (TUPCID) => {
@@ -772,6 +781,8 @@ app.get('/getAccountType/:TUPCID', async (req, res) => {
     return res.status(500).send({ message: 'Failed to fetch account type' });
   }
 });
+
+
 
 //for server
 app.listen(3001, () => {

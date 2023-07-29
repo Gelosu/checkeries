@@ -11,40 +11,42 @@ export default function MatchCode() {
   const [TUPCID, setTUPCID] = useState("");
   const router = useRouter();
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
-
-    
-    try {
-      // Make the GET request to fetch the TUPCID based on the code
-      const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
-
-      if (data.TUPCID) {
-        // Success, TUPCID found, save TUPCID and redirect to reset password page
-        setTUPCID(data.TUPCID);
-        console.log('code match')
-        
-        // Include the accountType in the URL query parameter when redirecting
-        router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}`);
-      } else {
-        // Code does not match, show error message
-        setError("Invalid code");
-        setTUPCID("");
-      }
-
-    } catch (error) {
-      // Error making the GET request
-      console.error("Error occurred while making the GET request:", error);
-      setError("Failed to communicate with the server");
-      setTUPCID("");
-    } finally {
-      setIsSubmitting(false);
+  useEffect(() => {
+    const TUPCIDFromQuery = router.query?.TUPCID;
+    if (TUPCIDFromQuery) {
+      setTUPCID(TUPCIDFromQuery);
     }
-  };
-  
- 
+  }, [router.query]);
+
+  const handleFormSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setIsSubmitting(true);
+
+  try {
+    // Make the GET request to fetch the TUPCID based on the code
+    const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
+
+    if (data.TUPCID) {
+      // Success, TUPCID found, save TUPCID and redirect to reset password page
+      setTUPCID(data.TUPCID);
+      console.log('code match:', data.TUPCID); // <-- Add this line to log the TUPCID value
+      // Include the accountType in the URL query parameter when redirecting
+      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}`);
+    } else {
+      // Code does not match, show error message
+      setError("Invalid code");
+      setTUPCID("");
+    }
+  } catch (error) {
+    // Error making the GET request
+    console.error("Error occurred while making the GET request:", error);
+    setError("Failed to communicate with the server");
+    setTUPCID("");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
