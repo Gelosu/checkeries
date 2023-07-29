@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
-export default function ForgotPassword() {
+export default function ForgetPassword() {
   const [TUPCID, setTUPCID] = useState("");
   const [GSFEACC, setGSFEACC] = useState("");
   const [error, setError] = useState("");
@@ -43,7 +43,6 @@ export default function ForgotPassword() {
     }
   };
 
-
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
       <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark rounded-3 py-5">
@@ -66,6 +65,7 @@ export default function ForgotPassword() {
             value={GSFEACC}
             onChange={(e) => setGSFEACC(e.target.value)}
           />
+          
           {responseMessage && (
             <small className="mb-2 text-success">{responseMessage}</small>
           )}

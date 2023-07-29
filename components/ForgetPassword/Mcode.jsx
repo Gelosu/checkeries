@@ -1,70 +1,78 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
-const MatchCode = () => {
+export default function MatchCode() {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [TUPCID, setTUPCID] = useState("");
   const router = useRouter();
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [TUPCID, setTUPCID] = useState('');
 
-  useEffect(() => {
-    // Check if the router.query object exists and if TUPCID is available
-    if (router.query.TUPCID) {
-      setTUPCID(router.query.TUPCID);
-    } else {
-      // If TUPCID is not available, handle the error or redirect to another page
-      // For example, you can redirect to the ForgotPassword page if TUPCID is not available
-      router.push('/login/ForgetPassword');
-    }
-  }, [router.query.TUPCID]);
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-  const handleCodeMatch = async (event) => {
-    event.preventDefault();
-
+    
     try {
-      // Make a POST request to the backend to match the code
-      const response = await axios.post('http://localhost:3001/matchcode', {
-        TUPCID: TUPCID,
-        code: code,
-      });
+      // Make the GET request to fetch the TUPCID based on the code
+      const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
 
-      // Assuming the server returns a JSON object with a 'status' field
-      if (response.data.status === 'success') {
-        // If the code matches, redirect to the UpdatePassword page
-        router.push('/login/ForgetPassword/UpdatePassword');
+      if (data.TUPCID) {
+        // Success, TUPCID found, save TUPCID and redirect to reset password page
+        setTUPCID(data.TUPCID);
+        console.log('code match')
+        
+        // Include the accountType in the URL query parameter when redirecting
+        router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}`);
       } else {
-        setError('Invalid code. Please check the code and try again.');
+        // Code does not match, show error message
+        setError("Invalid code");
+        setTUPCID("");
       }
+
     } catch (error) {
-      // Handle the error if there is a network issue or other server errors
-      setError('An error occurred. Please try again later.');
-      console.error('Error during code matching:', error);
+      // Error making the GET request
+      console.error("Error occurred while making the GET request:", error);
+      setError("Failed to communicate with the server");
+      setTUPCID("");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  
+ 
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
-      <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark h-50 rounded-3">
-        <form className="d-flex justify-content-center align-items-center flex-column col-12" onSubmit={handleCodeMatch}>
-          <p className="mb-0 mt-3">Enter the code received in your email</p>
+      <section className="col-lg-5 d-flex justify-content-center align-items-center flex-column border border-dark rounded-3 py-5">
+        <p className="mb-0 fw-bold fs-5">MATCH CODE</p>
+        <p className="fw-light text-center px-3">
+          Please enter the 6-digit code sent to your GSFE Account
+        </p>
+        <form onSubmit={handleFormSubmit} className="text-center d-flex flex-column">
           <input
             type="text"
-            className="py-1 px-3 w-75 rounded border border-dark mb-1 text-center"
-            name="code"
+            className="py-1 px-3 rounded border border-dark mb-3 text-center"
+            placeholder="6-Digit Code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
           {error && <small className="mb-2 text-danger">{error}</small>}
-          <button type="submit" className="px-3 mb-3 btn btn-outline-dark">
-            Match Code
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="px-3 mb-3 btn btn-outline-dark col-5"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </button>
+          </div>
         </form>
       </section>
     </main>
   );
-};
-
-export default MatchCode;
+}

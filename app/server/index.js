@@ -551,42 +551,52 @@ const sendEmailToGSFEAccount = (GSFEACC, code) => {
 app.post('/forgotpassword', async (req, res) => {
   const { TUPCID, GSFEACC } = req.body;
 
-  // Helper function to check if the TUPCID exists in the specified table
-  const checkTUPCIDExists = async (TUPCID, table) => {
+  // Helper function to find the account type based on the TUPCID
+  const findAccountType = async (TUPCID) => {
     try {
-      const query = `SELECT TUPCID FROM ${table} WHERE TUPCID = ?`;
-      const [rows] = await connection.query(query, [TUPCID]);
-      return rows.length > 0;
+      const studentQuery = 'SELECT TUPCID FROM student_accounts WHERE TUPCID = ?';
+      const facultyQuery = 'SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?';
+
+      const [studentRows] = await connection.query(studentQuery, [TUPCID]);
+      const [facultyRows] = await connection.query(facultyQuery, [TUPCID]);
+
+      if (studentRows.length > 0) {
+        return 'student';
+      } else if (facultyRows.length > 0) {
+        return 'faculty';
+      } else {
+        return null; // Account type not found
+      }
     } catch (error) {
       throw error;
     }
   };
 
-  // Generate unique code, store it in the database, and send it to the registered GSFE account via email
   const generateAndSendCode = async (TUPCID, GSFEACC) => {
     try {
       // Generate a random 6-digit number between 100000 and 999999 (inclusive)
       const min = 100000;
       const max = 999999;
       const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
-
+  
       // Convert the random number to a 6-digit string by padding with leading zeros
       const code = randomNumber.toString().padStart(6, '0');
-
-      // Store the code in the database along with TUPCID and GSFEACC
+  
+      // Store the code and accountType in the database along with TUPCID and GSFEACC
       const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code) VALUES (?, ?, ?)';
       await connection.query(query, [TUPCID, GSFEACC, code]);
-
-      // Send the code to the registered GSFE account via email
+  
+      // Send the code and account type to the registered GSFE account via email
       sendEmailToGSFEAccount(GSFEACC, code);
-
-      // Send the response back to the client
-      return res.status(200).send({ message: 'Code sent to GSFE Account' });
+  
+      // Send the response back to the client along with the account type
+      return res.status(200).send({ message: 'Code sent to GSFE Account'});
     } catch (err) {
       console.error('Error generating and sending code:', err);
       return res.status(500).send({ message: 'Failed to generate and send code' });
     }
   };
+  
 
   try {
     // Check if TUPCID and GSFEACC are provided and not empty
@@ -594,30 +604,21 @@ app.post('/forgotpassword', async (req, res) => {
       return res.status(400).send({ message: 'TUPCID and GSFEACC are required fields' });
     }
 
-    // Check if the TUPCID exists in the student_accounts table
-    const existsInStudents = await checkTUPCIDExists(TUPCID, 'student_accounts');
-    if (!existsInStudents) {
-      // If not found in student_accounts, check in faculty_accounts
-      const existsInFaculty = await checkTUPCIDExists(TUPCID, 'faculty_accounts');
-      if (!existsInFaculty) {
-        return res.status(404).send({ message: 'TUPCID does not exist' });
-      }
+    // Check if the TUPCID exists in any account type table (student_accounts or faculty_accounts)
+    const accountType = await findAccountType(TUPCID);
+    if (!accountType) {
+      return res.status(404).send({ message: 'TUPCID does not exist' });
     }
 
     // TUPCID exists, generate unique code, store it in the database, and send it to the GSFE account
-    return await generateAndSendCode(TUPCID, GSFEACC);
+    return await generateAndSendCode(TUPCID, GSFEACC, accountType); // Pass the accountType to the function
   } catch (err) {
     console.error('Error checking TUPCID in the database:', err);
     return res.status(500).send({ message: 'Failed to check TUPCID in the database' });
   }
 });
 
-
-
 //match coding...
-
-// POST request to check if the inputted code matches the code received on the user's email
-// Check if the inputted code matches the code received on the user's email
 // POST request to check if the inputted code matches the code received on the user's email
 // Check if the inputted code matches the code received on the user's email
 app.post('/matchcode', async (req, res) => {
@@ -650,8 +651,127 @@ app.post('/matchcode', async (req, res) => {
   }
 });
 
+//getTUPCID IN FORGETPASSS..
+
+app.get('/getTUPCID', async (req, res) => {
+  const { code } = req.query;
+
+  try {
+    const query = 'SELECT TUPCID FROM passwordreset_accounts WHERE code = ?';
+    const [rows] = await connection.query(query, [code]);
+
+    if (rows.length > 0) {
+      return res.status(200).send({ TUPCID: rows[0].TUPCID});
+    } else {
+      return res.status(404).send({ message: 'Code not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching TUPCID:', error);
+    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+  }
+});
 
 
+//get account type
+app.get('/getAccountType', async (req, res) => {
+  const { TUPCID } = req.query;
+
+  try {
+    // Find the account type for the given TUPCID (student or faculty)
+    const accountType = await findAccountType(TUPCID);
+
+    if (accountType) {
+      return res.status(200).send({ accountType });
+    } else {
+      return res.status(404).send({ message: 'Account type not found' });
+    }
+  } catch (err) {
+    console.error('Error fetching account type:', err);
+    return res.status(500).send({ message: 'Failed to fetch account type' });
+  }
+});
+
+
+//update pass in forgot pass
+
+// Helper function to update password for both students and faculty
+const updatePassword = async (table, TUPCID, newPassword) => {
+  try {
+    // Hash the new password before storing it in the database
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+
+    const query = `UPDATE ${table}_accounts SET PASSWORD = ? WHERE TUPCID = ?`;
+    await connection.query(query, [hashedPassword, TUPCID]);
+
+    return { message: `${table} password updated successfully` };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// PASSWORD UPDATE
+app.post('/updatepassword', async (req, res) => {
+  const { TUPCID, newPassword } = req.body;
+
+  try {
+    // Check if the TUPCID exists in the student_accounts table
+    const existsInStudent = await checkTUPCIDExists(TUPCID, 'student_accounts');
+    if (existsInStudent) {
+      await updatePassword('student_accounts', TUPCID, newPassword);
+      return res.status(200).send({ message: 'Password updated successfully' });
+    }
+
+    // Check if the TUPCID exists in the faculty_accounts table
+    const existsInFaculty = await checkTUPCIDExists(TUPCID, 'faculty_accounts');
+    if (existsInFaculty) {
+      await updatePassword('faculty_accounts', TUPCID, newPassword);
+      return res.status(200).send({ message: 'Password updated successfully' });
+    }
+
+    return res.status(404).send({ message: 'TUPCID not found' });
+  } catch (err) {
+    console.error('Error updating password:', err);
+    return res.status(500).send({ message: 'Failed to update password' });
+  }
+});
+
+//FIND ACCOUNT TYPE
+const findAccountType = async (TUPCID) => {
+  try {
+    // Query the student_accounts table
+    const [studentRows] = await connection.query("SELECT TUPCID FROM student_accounts WHERE TUPCID = ?", [TUPCID]);
+
+    if (studentRows.length > 0) {
+      return "student";
+    }
+
+    // Query the faculty_accounts table
+    const [facultyRows] = await connection.query("SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?", [TUPCID]);
+
+    if (facultyRows.length > 0) {
+      return "faculty";
+    }
+
+    // If no match is found in both tables, return null
+    return null;
+  } catch (error) {
+    console.error("Error finding account type:", error);
+    throw error;
+  }
+};
+
+
+//getting account type
+app.get('/getAccountType/:TUPCID', async (req, res) => {
+  const { TUPCID } = req.params;
+  try {
+    const accountType = await findAccountType(TUPCID); // Implement the findAccountType function
+    return res.status(200).send({ accountType });
+  } catch (err) {
+    console.error('Error finding account type:', err);
+    return res.status(500).send({ message: 'Failed to fetch account type' });
+  }
+});
 
 //for server
 app.listen(3001, () => {
