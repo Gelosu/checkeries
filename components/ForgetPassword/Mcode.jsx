@@ -19,7 +19,7 @@ export default function MatchCode() {
   }, [router.query]);
 
   
-
+  console.log("TUPCID:", TUPCID);
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -29,12 +29,14 @@ export default function MatchCode() {
       // Make the GET request to fetch the TUPCID and accountType based on the code
       const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
   
+      // Check if both TUPCID and accountType are present in the response data
       if (data.TUPCID && data.accountType) {
         // Success, TUPCID found, save TUPCID and accountType, then redirect to reset password page
         setTUPCID(data.TUPCID);
         const { accountType } = data; // Extract the accountType from the response data
         console.log('code match:', data.TUPCID, accountType);
-        router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}&accountType=${accountType}`);
+      // Inside the handleFormSubmit function in MatchCode component
+      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}&accountType=${data.accountType}`);
       } else {
         // Code does not match, show error message
         setError("Invalid code");
@@ -49,6 +51,7 @@ export default function MatchCode() {
       setIsSubmitting(false);
     }
   };
+  
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">

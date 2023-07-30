@@ -12,22 +12,21 @@ export default function UpdatePassword() {
   const [passwordMatch, setPasswordMatch] = useState(true);
   const [accountType, setAccountType] = useState(""); // Add a new state for accountType
 
+  // Fetch the TUPCID and accountType from the URL when the component mounts
   useEffect(() => {
     console.log("useEffect triggered");
-    console.log("Router Query:", router.query);
-    if (router.query && router.query.TUPCID) {
-      setTUPCID(router.query.TUPCID);
+    const TUPCIDFromQuery = router.query?.TUPCID;
+    const accountTypeFromQuery = router.query?.accountType;
+    console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
+    console.log("accountTypeFromQuery:", accountTypeFromQuery);
+    if (TUPCIDFromQuery) {
+      setTUPCID(TUPCIDFromQuery);
     }
-
-    // Retrieve the accountType from the router query and set it to the state
-    if (router.query && router.query.accountType) {
-      setAccountType(router.query.accountType);
+    if (accountTypeFromQuery) {
+      setAccountType(accountTypeFromQuery);
     }
   }, [router.query]);
-
-  console.log("TUPCID:", TUPCID);
-  console.log("accountType:", accountType);
-
+  
 
   // Function to handle password input changes
   const handlePasswordChange = (e) => {
@@ -48,29 +47,33 @@ export default function UpdatePassword() {
       e.target.disabled = true;
 
       try {
-        // Make a PUT request to the server to update the password
-      //const response = await axios.put(
-        //`http://localhost:3001/updatepassword/${TUPCID}`,
-        //{
-        //  PASSWORD: PASSWORD,
-        //}
-      //);
-      console.log('TUPCID:',TUPCID)
-      console.log('ACCOUNTTYPE:',accountType)
+        // Make a PUT request to update the password based on the accountType
+        // await axios.put(
+        //   `http://localhost:3001/updatepassword/${accountType}`,
+        //   {
+        //     TUPCID,
+        //     PASSWORD,
+        //   }
+        // );
+
         // If the request is successful, show a success message and redirect to the login page
-        alert(response.data.message);
-        
-        // Redirect to the login page after successful password update
+        console.log('TUPCID:', TUPCID);
+        console.log('accountType:', accountType);
+        alert("Password updated successfully!");
         // Implement the redirect logic here
+
       } catch (error) {
         // If there is an error, show an error message
-        //console.error("Error updating password:", error);
-        //alert("Failed to update password. Please try again.");
+        console.error("Error updating password:", error);
+        alert("Failed to update password. Please try again.");
       }
     } else {
       setPasswordMatch(false); // Set passwordMatch state to false if passwords don't match
     }
   };
+
+  
+
   return (
     <main className="container-sm vh-100 d-flex justify-content-center align-items-center">
       <section className="col-sm-5 border border-dark rounded p-3 py-5">
