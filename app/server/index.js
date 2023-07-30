@@ -517,8 +517,8 @@ app.post('/adminlogin', (req, res) => {
 
 
 
-// Send email to GSFE Account
-const sendEmailToGSFEAccount = (GSFEACC, code) => {
+/// Function to send the email to GSFE Account
+const sendEmailToGSFEAccount = async (GSFEACC, code) => {
   // Replace these placeholders with your actual email service credentials and settings
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -535,19 +535,18 @@ const sendEmailToGSFEAccount = (GSFEACC, code) => {
     text: `Good day! In order to update your password in the current account, please use the following 6-digit code: ${code}`,
   };
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      console.error('Error sending email:', err);
-    } else {
-      console.log('Email sent:', info.response);
-    }
-  });
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent to GSFE Account:', GSFEACC);
+  } catch (err) {
+    console.error('Error sending email to GSFE Account:', err);
+    throw err;
+  }
 };
 
 
 
 
-// FORGOT PASSWORD
 app.post('/forgotpassword', async (req, res) => {
   const { TUPCID, GSFEACC } = req.body;
 
@@ -572,7 +571,7 @@ app.post('/forgotpassword', async (req, res) => {
     }
   };
 
-  const generateAndSendCode = async (TUPCID, GSFEACC) => {
+  const generateAndSendCode = async (TUPCID, GSFEACC, accountType) => { // Add 'accountType' as a parameter
     try {
       // Generate a random 6-digit number between 100000 and 999999 (inclusive)
       const min = 100000;
@@ -583,8 +582,8 @@ app.post('/forgotpassword', async (req, res) => {
       const code = randomNumber.toString().padStart(6, '0');
   
       // Store the code and accountType in the database along with TUPCID and GSFEACC
-      const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code) VALUES (?, ?, ?)';
-      await connection.query(query, [TUPCID, GSFEACC, code]);
+      const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)'; // Include 'accountType' in the query
+      await connection.query(query, [TUPCID, GSFEACC, code, accountType]); // Pass 'accountType' as a parameter
   
       // Send the code and account type to the registered GSFE account via email
       sendEmailToGSFEAccount(GSFEACC, code);
@@ -596,8 +595,9 @@ app.post('/forgotpassword', async (req, res) => {
       return res.status(500).send({ message: 'Failed to generate and send code' });
     }
   };
+ 
   
-
+  
   try {
     // Check if TUPCID and GSFEACC are provided and not empty
     if (!TUPCID || !GSFEACC) {
@@ -610,11 +610,27 @@ app.post('/forgotpassword', async (req, res) => {
       return res.status(404).send({ message: 'TUPCID does not exist' });
     }
 
-    // TUPCID exists, generate unique code, store it in the database, and send it to the GSFE account
-    return await generateAndSendCode(TUPCID, GSFEACC, accountType); // Pass the accountType to the function
+    // Generate a random 6-digit number between 100000 and 999999 (inclusive)
+    const min = 100000;
+    const max = 999999;
+    const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
+    const code = randomNumber.toString().padStart(6, '0');
+
+    // Store the code and accountType in the database along with TUPCID and GSFEACC
+    const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)';
+    await connection.query(query, [TUPCID, GSFEACC, code, accountType]);
+
+    // Send the code to the GSFE account via email
+    await sendEmailToGSFEAccount(GSFEACC, code);
+
+    // Send the response back to the client along with the account type
+    return res.status(200).send({
+      message: 'A 6-digit code has been sent to the provided GSFE Account email address.',
+      accountType,
+    });
   } catch (err) {
-    console.error('Error checking TUPCID in the database:', err);
-    return res.status(500).send({ message: 'Failed to check TUPCID in the database' });
+    console.error('Error handling forgot password request:', err);
+    return res.status(500).send({ message: 'Failed to process the request' });
   }
 });
 
@@ -657,11 +673,12 @@ app.get('/getTUPCID', async (req, res) => {
   const { code } = req.query;
 
   try {
-    const query = 'SELECT TUPCID FROM passwordreset_accounts WHERE code = ?';
+    const query = 'SELECT TUPCID, accountType FROM passwordreset_accounts WHERE code = ?';
     const [rows] = await connection.query(query, [code]);
 
     if (rows.length > 0) {
-      return res.status(200).send({ TUPCID: rows[0].TUPCID});
+      const { TUPCID, accountType } = rows[0];
+      return res.status(200).send({ TUPCID, accountType });
     } else {
       return res.status(404).send({ message: 'Code not found' });
     }
@@ -672,19 +689,18 @@ app.get('/getTUPCID', async (req, res) => {
 });
 
 
+
 //get account type
-app.get('/getAccountType', async (req, res) => {
+// Endpoint for fetching the account type based on TUPCID
+app.get('/getaccounttype', async (req, res) => {
   const { TUPCID } = req.query;
 
   try {
-    // Find the account type for the given TUPCID (student or faculty)
     const accountType = await findAccountType(TUPCID);
-
-    if (accountType) {
-      return res.status(200).send({ accountType });
-    } else {
-      return res.status(404).send({ message: 'Account type not found' });
+    if (!accountType) {
+      return res.status(404).send({ message: 'Account type not found for the provided TUPCID' });
     }
+    return res.status(200).send({ accountType });
   } catch (err) {
     console.error('Error fetching account type:', err);
     return res.status(500).send({ message: 'Failed to fetch account type' });
@@ -694,7 +710,8 @@ app.get('/getAccountType', async (req, res) => {
 
 //update pass in forgot pass
 
-// Helper function to update password for both students and faculty
+
+// Helper function to update password for students and faculty
 const updatePassword = async (table, TUPCID, newPassword) => {
   try {
     // Hash the new password before storing it in the database
@@ -709,40 +726,28 @@ const updatePassword = async (table, TUPCID, newPassword) => {
   }
 };
 
-// PASSWORD UPDATE
-// PASSWORD UPDATE
+
 app.put('/updatepassword/:TUPCID', async (req, res) => {
   const TUPCIDFromParams = req.params.TUPCID; // Get the TUPCID from the request params
-  const { newPassword } = req.body;
+  const { PASSWORD } = req.body;
 
   try {
-    // Check if the TUPCID exists in the student_accounts table
-    const existsInStudent = await checkTUPCIDExists(TUPCIDFromParams, 'student_accounts');
-    if (existsInStudent) {
-      await updatePassword('student_accounts', TUPCIDFromParams, newPassword);
-      return res.status(200).send({ message: 'Password updated successfully' });
+    // Check if the TUPCID exists in either student_accounts or faculty_accounts table
+    const accountType = await findAccountType(TUPCIDFromParams);
+    if (accountType === 'student') {
+      await updatePassword('student_accounts', TUPCIDFromParams, PASSWORD);
+    } else if (accountType === 'faculty') {
+      await updatePassword('faculty_accounts', TUPCIDFromParams, PASSWORD);
+    } else {
+      return res.status(404).send({ message: 'TUPCID not found' });
     }
 
-    // Check if the TUPCID exists in the faculty_accounts table
-    const existsInFaculty = await checkTUPCIDExists(TUPCIDFromParams, 'faculty_accounts');
-    if (existsInFaculty) {
-      await updatePassword('faculty_accounts', TUPCIDFromParams, newPassword);
-      return res.status(200).send({ message: 'Password updated successfully' });
-    }
-
-    return res.status(404).send({ message: 'TUPCID not found' });
+    return res.status(200).send({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('Error updating password:', err);
     return res.status(500).send({ message: 'Failed to update password' });
   }
 });
-
-
-
-
-
-
-
 
 //FIND ACCOUNT TYPE
 const findAccountType = async (TUPCID) => {

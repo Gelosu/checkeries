@@ -19,20 +19,26 @@ export default function ForgetPassword() {
     setIsSubmitting(true);
 
     try {
-      // Make the API request to the backend
-      const { data } = await axios.post("http://localhost:3001/forgotpassword", {
-        TUPCID,
-        GSFEACC,
-      });
+      // Make the API request to fetch the accountType based on TUPCID
+      const { data } = await axios.get(`http://localhost:3001/getaccounttype?TUPCID=${TUPCID}`);
 
-      if (data.message === "Code sent to GSFE Account") {
+      // Check if the API call was successful and accountType is available
+      if (data.accountType) {
+        // Make the API request to send the code
+        await axios.post("http://localhost:3001/forgotpassword", {
+          TUPCID,
+          GSFEACC,
+        });
+
         // Success, show the success message when code is sent
         setResponseMessage("Code sent successfully. Please check your GSFE Account.");
-        // Redirect to the MatchCode page with TUPCID as a query parameter
-        router.push(`/matchcode?TUPCID=${TUPCID}`);
+        // Extract the accountType from the data object
+        const { accountType } = data;
+        // Redirect to the MatchCode page with TUPCID and accountType as query parameters
+        router.push(`/matchcode?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else {
-        // Show other successful response messages or error messages from the API
-        setResponseMessage(data.message);
+        // Show a message indicating that the account type was not found
+        setError("Account type not found for the provided TUPCID");
       }
     } catch (error) {
       // Error making the API request
@@ -42,6 +48,7 @@ export default function ForgetPassword() {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">

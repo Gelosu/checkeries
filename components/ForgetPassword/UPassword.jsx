@@ -2,21 +2,32 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; // Import the useRouter hook from 'next/router'
-import axios from "axios";
+//import axios from "axios";
 
 export default function UpdatePassword() {
-  const router = useRouter(); // Use the useRouter hook to access the router object
+  const router = useRouter();
   const [TUPCID, setTUPCID] = useState("");
   const [PASSWORD, setPASSWORD] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMatch, setPasswordMatch] = useState(true); 
+  const [passwordMatch, setPasswordMatch] = useState(true);
+  const [accountType, setAccountType] = useState(""); // Add a new state for accountType
 
   useEffect(() => {
-    // Check if the router.query object has been populated
+    console.log("useEffect triggered");
+    console.log("Router Query:", router.query);
     if (router.query && router.query.TUPCID) {
       setTUPCID(router.query.TUPCID);
     }
+
+    // Retrieve the accountType from the router query and set it to the state
+    if (router.query && router.query.accountType) {
+      setAccountType(router.query.accountType);
+    }
   }, [router.query]);
+
+  console.log("TUPCID:", TUPCID);
+  console.log("accountType:", accountType);
+
 
   // Function to handle password input changes
   const handlePasswordChange = (e) => {
@@ -37,25 +48,29 @@ export default function UpdatePassword() {
       e.target.disabled = true;
 
       try {
-        // Make a POST request to the server to update the password
-        const response = await axios.put(`http://localhost:3001/updatepassword/${TUPCID}`, {
-          PASSWORD: PASSWORD,
-        });
-
+        // Make a PUT request to the server to update the password
+      //const response = await axios.put(
+        //`http://localhost:3001/updatepassword/${TUPCID}`,
+        //{
+        //  PASSWORD: PASSWORD,
+        //}
+      //);
+      console.log('TUPCID:',TUPCID)
+      console.log('ACCOUNTTYPE:',accountType)
         // If the request is successful, show a success message and redirect to the login page
         alert(response.data.message);
+        
         // Redirect to the login page after successful password update
         // Implement the redirect logic here
       } catch (error) {
         // If there is an error, show an error message
-        console.error("Error updating password:", error);
-        alert("Failed to update password. Please try again.");
+        //console.error("Error updating password:", error);
+        //alert("Failed to update password. Please try again.");
       }
     } else {
       setPasswordMatch(false); // Set passwordMatch state to false if passwords don't match
     }
   };
-
   return (
     <main className="container-sm vh-100 d-flex justify-content-center align-items-center">
       <section className="col-sm-5 border border-dark rounded p-3 py-5">
