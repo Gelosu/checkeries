@@ -36,6 +36,7 @@ export default function ForgetPassword() {
         const { accountType } = data;
         // Redirect to the MatchCode page with TUPCID and accountType as query parameters
         router.push(`/matchcode?TUPCID=${TUPCID}&accountType=${accountType}`);
+        
       } else {
         // Show a message indicating that the account type was not found
         setError("Account type not found for the provided TUPCID");

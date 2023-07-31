@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; // Import the useRouter hook from 'next/router'
-//import axios from "axios";
+import axios from "axios";
 
 export default function UpdatePassword() {
   const router = useRouter();
@@ -13,12 +13,11 @@ export default function UpdatePassword() {
   const [accountType, setAccountType] = useState(""); // Add a new state for accountType
 
   // Fetch the TUPCID and accountType from the URL when the component mounts
+   // Fetch the TUPCID and accountType from the URL when the component mounts
   useEffect(() => {
-    console.log("useEffect triggered");
     const TUPCIDFromQuery = router.query?.TUPCID;
     const accountTypeFromQuery = router.query?.accountType;
-    console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
-    console.log("accountTypeFromQuery:", accountTypeFromQuery);
+
     if (TUPCIDFromQuery) {
       setTUPCID(TUPCIDFromQuery);
     }
@@ -48,14 +47,13 @@ export default function UpdatePassword() {
 
       try {
         // Make a PUT request to update the password based on the accountType
-        // await axios.put(
-        //   `http://localhost:3001/updatepassword/${accountType}`,
-        //   {
-        //     TUPCID,
-        //     PASSWORD,
-        //   }
-        // );
-
+        //await axios.put(
+          //`http://localhost:3001/updatepassword/${TUPCID}`,
+          //{
+        //    PASSWORD: PASSWORD,
+         // }
+        //);
+  
         // If the request is successful, show a success message and redirect to the login page
         console.log('TUPCID:', TUPCID);
         console.log('accountType:', accountType);
@@ -64,8 +62,8 @@ export default function UpdatePassword() {
 
       } catch (error) {
         // If there is an error, show an error message
-        console.error("Error updating password:", error);
-        alert("Failed to update password. Please try again.");
+        //console.error("Error updating password:", error);
+        //alert("Failed to update password. Please try again.");
       }
     } else {
       setPasswordMatch(false); // Set passwordMatch state to false if passwords don't match
