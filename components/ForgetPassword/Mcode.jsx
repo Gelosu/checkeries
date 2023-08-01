@@ -12,8 +12,9 @@ export default function MatchCode() {
   const searchParams = useSearchParams();
   const TUPCID = searchParams.get("TUPCID");
   const accountType = searchParams.get('accountType');
-  console.log("TUPCID:",TUPCID);
-  console.log("accountType:",accountType);
+ 
+  
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -53,7 +54,7 @@ export default function MatchCode() {
         <p className="fw-light text-center px-3">
           Please enter the 6-digit code sent to your GSFE Account
         </p>
-        <form onClick={handleFormSubmit} className="text-center d-flex flex-column">
+        <form onSubmit={handleFormSubmit} className="text-center d-flex flex-column">
           <input
             type="text"
             className="py-1 px-3 rounded border border-dark mb-3 text-center"

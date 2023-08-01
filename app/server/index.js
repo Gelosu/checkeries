@@ -490,11 +490,11 @@ app.post('/login', async (req, res) => {
 
 
 app.post('/adminlogin', (req, res) => {
-  const { ADMINNAME, PASSWORD } = req.body;
+  const { adminName } = req.body;
 
   // Check if the adminName exists in the admin_accounts table
   const query = 'SELECT * FROM admin_accounts WHERE ADMINNAME = ?';
-  connection.query(query, [ADMINNAME], async (err, result) => {
+  connection.query(query, [adminName], (err, result) => {
     if (err) {
       console.error('Error fetching admin account:', err);
       return res.status(500).send({ message: 'Database error' });
@@ -505,18 +505,9 @@ app.post('/adminlogin', (req, res) => {
       return res.status(404).send({ isAuthenticated: false });
     }
 
-    // AdminName found, verify the password
-    const admin = result[0];
-    const isPasswordMatch = await bcryptjs.compare(PASSWORD, admin.PASSWORD);
-
-    if (isPasswordMatch) {
-      // Password matched, admin is authenticated
-      // In a production scenario, you may want to generate a secure token here and use it to authenticate the user
-      return res.status(200).send({ isAuthenticated: true, adminName: admin.ADMINNAME });
-    } else {
-      // Password didn't match, admin is not authenticated
-      return res.status(401).send({ isAuthenticated: false });
-    }
+    // AdminName found, admin is authenticated
+    // In a production scenario, you may want to generate a secure token here and use it to authenticate the user
+    return res.status(200).send({ isAuthenticated: true, adminName: result[0].ADMINNAME });
   });
 });
 
