@@ -490,11 +490,11 @@ app.post('/login', async (req, res) => {
 
 
 app.post('/adminlogin', (req, res) => {
-  const { adminName } = req.body;
+  const { ADMINNAME, PASSWORD } = req.body;
 
   // Check if the adminName exists in the admin_accounts table
   const query = 'SELECT * FROM admin_accounts WHERE ADMINNAME = ?';
-  connection.query(query, [adminName], (err, result) => {
+  connection.query(query, [ADMINNAME], async (err, result) => {
     if (err) {
       console.error('Error fetching admin account:', err);
       return res.status(500).send({ message: 'Database error' });
@@ -505,11 +505,21 @@ app.post('/adminlogin', (req, res) => {
       return res.status(404).send({ isAuthenticated: false });
     }
 
-    // AdminName found, admin is authenticated
-    // In a production scenario, you may want to generate a secure token here and use it to authenticate the user
-    return res.status(200).send({ isAuthenticated: true, adminName: result[0].ADMINNAME });
+    // AdminName found, verify the password
+    const admin = result[0];
+    const isPasswordMatch = await bcryptjs.compare(PASSWORD, admin.PASSWORD);
+
+    if (isPasswordMatch) {
+      // Password matched, admin is authenticated
+      // In a production scenario, you may want to generate a secure token here and use it to authenticate the user
+      return res.status(200).send({ isAuthenticated: true, adminName: admin.ADMINNAME });
+    } else {
+      // Password didn't match, admin is not authenticated
+      return res.status(401).send({ isAuthenticated: false });
+    }
   });
 });
+
 
 
 
@@ -712,10 +722,10 @@ app.get('/getaccounttype', async (req, res) => {
 
 
 // Helper function to update password for students and faculty
-const updatePassword = async (table, TUPCID, newPassword) => {
+const updatePassword = async (table, TUPCID, PASSWORD) => {
   try {
     // Hash the new password before storing it in the database
-    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+    const hashedPassword = await bcryptjs.hash(PASSWORD, 10);
 
     const query = `UPDATE ${table}_accounts SET PASSWORD = ? WHERE TUPCID = ?`;
     await connection.query(query, [hashedPassword, TUPCID]);
@@ -735,9 +745,9 @@ app.put('/updatepassword/:TUPCID', async (req, res) => {
     // Check if the TUPCID exists in either student_accounts or faculty_accounts table
     const accountType = await findAccountType(TUPCIDFromParams);
     if (accountType === 'student') {
-      await updatePassword('student_accounts', TUPCIDFromParams, PASSWORD);
+      await updatePassword('student', TUPCIDFromParams, PASSWORD);
     } else if (accountType === 'faculty') {
-      await updatePassword('faculty_accounts', TUPCIDFromParams, PASSWORD);
+      await updatePassword('faculty', TUPCIDFromParams, PASSWORD);
     } else {
       return res.status(404).send({ message: 'TUPCID not found' });
     }

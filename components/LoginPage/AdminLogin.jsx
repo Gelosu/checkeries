@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -8,15 +10,16 @@ const AdminLogin = () => {
 
   const handleAdminLogin = async (event) => {
     event.preventDefault();
-    const adminName = event.target.elements.ADMINNAME.value;
-    const passWord = event.target.elements.PASSWORD.value;
+    const ADMINNAME = event.target.elements.ADMINNAME.value;
+    const PASSWORD = event.target.elements.PASSWORD.value;
     // Log the adminName for development purposes only
-    console.log('Admin Name:', adminName);
+    console.log('Admin Name:', ADMINNAME);
+    console.log('pass:', PASSWORD);
 
     try {
       const response = await axios.post('http://localhost:3001/adminlogin', {
-        adminName,
-        passWord,
+        ADMINNAME,
+        PASSWORD,
       });
 
       const isAuthenticated = response.data.isAuthenticated;
@@ -24,9 +27,8 @@ const AdminLogin = () => {
         console.log('Login successful');
         router.push('/adminpage');
       } else {
-        setError('Invalid admin name');
-        console.log('Invalid admin name');
-        
+        setError('Invalid admin name or password');
+        console.log('Invalid admin name or password');
       }
     } catch (error) {
       setError('An error occurred. Please try again later.');
@@ -39,10 +41,9 @@ const AdminLogin = () => {
     if (error) {
       setTimeout(() => {
         setError('');
-        router.push('/login'); // Redirect back to the login page
-      }, 3000); // Redirect after 3 seconds
+      }, 3000); // Clear the error after 3 seconds
     }
-  }, [error, router]);
+  }, [error]);
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">

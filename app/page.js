@@ -6,7 +6,7 @@ import Instruction from "@/components/Main/Instruction";
 import Video from "@/components/Main/Video";
 import Link from "next/link";
 
-export default function Home({setName}) {
+export default function Home() {
   return (
     <main>
       <nav className="position-sticky navbar top-0 w-100 navbar-lg px-3 bg-danger text-dark z-index">

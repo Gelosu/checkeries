@@ -1,25 +1,19 @@
-"use client"
 
+"use client"
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 
 export default function MatchCode() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [TUPCID, setTUPCID] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    const TUPCIDFromQuery = router.query?.TUPCID;
-    if (TUPCIDFromQuery) {
-      setTUPCID(TUPCIDFromQuery);
-    }
-  }, [router.query]);
-
-  
-  console.log("TUPCID:", TUPCID);
+  const searchParams = useSearchParams();
+  const TUPCID = searchParams.get("TUPCID");
+  const accountType = searchParams.get('accountType');
+  console.log("TUPCID:",TUPCID);
+  console.log("accountType:",accountType);
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -32,26 +26,25 @@ export default function MatchCode() {
       // Check if both TUPCID and accountType are present in the response data
       if (data.TUPCID && data.accountType) {
         // Success, TUPCID found, save TUPCID and accountType, then redirect to reset password page
-        setTUPCID(data.TUPCID);
+
         const { accountType } = data; // Extract the accountType from the response data
         console.log('code match:', data.TUPCID, accountType);
       // Inside the handleFormSubmit function in MatchCode component
-      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${data.TUPCID}&accountType=${data.accountType}`);
+      router.push(`/login/ForgetPassword/UpdatePassword?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else {
         // Code does not match, show error message
         setError("Invalid code");
-        setTUPCID("");
+
       }
     } catch (error) {
       // Error making the GET request
       console.error("Error occurred while making the GET request:", error);
       setError("Failed to communicate with the server");
-      setTUPCID("");
+
     } finally {
       setIsSubmitting(false);
     }
   };
-  
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
@@ -60,7 +53,7 @@ export default function MatchCode() {
         <p className="fw-light text-center px-3">
           Please enter the 6-digit code sent to your GSFE Account
         </p>
-        <form onSubmit={handleFormSubmit} className="text-center d-flex flex-column">
+        <form onClick={handleFormSubmit} className="text-center d-flex flex-column">
           <input
             type="text"
             className="py-1 px-3 rounded border border-dark mb-3 text-center"
@@ -75,7 +68,7 @@ export default function MatchCode() {
               className="px-3 mb-3 btn btn-outline-dark col-5"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? <span>Loading...</span> : "Submit"}
             </button>
           </div>
         </form>

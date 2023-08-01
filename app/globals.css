@@ -48,7 +48,18 @@ a{
 .custom-c{
   appearance: none;
 }
-
+#ShowHide{
+  position: absolute;
+  right: .7rem; 
+  top: 50%;
+  transform: translateY(-50%);
+}
+#ShowHide2{
+  position: absolute;
+  right: .7rem;
+  top: 8px;
+  
+}
 @media screen and (max-width:767px) {
   .custom-c,.custom-v{
     cursor: pointer;
@@ -60,7 +71,7 @@ a{
   }
   .custom-con2,
   .custom-con1{
-    transition: .1s ease-in-out;
+    transition: .3s ease-in-out;
     
   }
   .custom-con1{
@@ -68,16 +79,15 @@ a{
   }
   .custom-hov2{
     display: flex;
-    transition: .1s ease-in-out;
+    transition: .3s ease-in-out;
   }
   .custom-v::before,
   .custom-c::before{
     content: "";
     z-index: 7;
-    top: 50%;
+    top: 49%;
     height: 5px;
     width: 15px;
-    transform: rotate(45deg);
     transition: .5s ease-in-out;
   } 
   .custom-v::after,
@@ -87,9 +97,16 @@ a{
     top: 50%;
     height: 5px;
     width: 15px;
-    transform: rotate(-45deg);
     transition: .5s ease-in-out;
   } 
+  .custom-c::after,
+  .custom-v::before{
+    transform: rotate(45deg);
+  }
+  .custom-c::before,
+  .custom-v::after{
+    transform: rotate(-45deg);
+  }
   .custom-c::before, .custom-c::after{
     position: absolute;
     background-color: rebeccapurple; 

@@ -32,7 +32,8 @@ export default function Login() {
     
   
     try {
-      const response = await axios.post('http://localhost:3001/login', data);
+      const response = await axios.post('http://localhost:3001/login',
+      {TUPCID, PASSWORD });
       console.log('Response from server:', response.data);
       const accountType = response.data.accountType;
       console.log('Received account type:', accountType);
@@ -50,7 +51,9 @@ export default function Login() {
     } catch (error) {
       if (error.response && error.response.status === 401) {
         setError('Password is incorrect');
+
       } else if (error.response && error.response.status === 404) {
+        console.log(data);
         setError('Account does not exist');
       } else {
         setError('An error occurred. Please try again later.');
@@ -80,13 +83,15 @@ export default function Login() {
               className="py-1 px-3 rounded border border-dark text-center form-control"
               {...register('PASSWORD')}
             />
-            <button
-              type="button"
-              className="btn btn-outline-secondary" // Style the button as needed
-              onClick={() => setShowPassword(!showPassword)} // Toggle password visibility when the button is clicked
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
+            <a onClick={() => setShowPassword(!showPassword)}>
+              <img
+              id="ShowHide" 
+                src={showPassword ? "/hide.svg" : "/show.svg"}
+                alt={showPassword ? "hide" : "show"}
+                height={19}
+                width={19}
+              />
+            </a>
           </div>
           <small className="mb-2 text-danger">{errors.PASSWORD?.message}</small>
           {error && <small className="mb-2 text-danger">{error}</small>} {/* Display error message */}
