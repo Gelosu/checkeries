@@ -20,6 +20,8 @@ export default function StudentArchive() {
     setClassCode(updatedClass);
     console.log(classCode)
   };
+
+  
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">

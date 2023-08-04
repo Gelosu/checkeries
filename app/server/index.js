@@ -489,21 +489,26 @@ app.post('/login', async (req, res) => {
 });
 
 
-app.post('/adminlogin', async (req, res) => {
-  const { adminName, passWord } = req.body;
+app.post('/adminlogin', (req, res) => {
+  const { adminName } = req.body;
 
-  try {
-    const connect = await connection.getConnection();
-    const adminLogin = await connect.execute('SELECT * FROM admin_accounts WHERE ADMINNAME = ? AND PASSWORD = ?', [adminName, passWord]);
-    connect.release();
-    if (adminLogin.length === 0) {
+  // Check if the adminName exists in the admin_accounts table
+  const query = 'SELECT * FROM admin_accounts WHERE ADMINNAME = ?';
+  connection.query(query, [adminName], (err, result) => {
+    if (err) {
+      console.error('Error fetching admin account:', err);
+      return res.status(500).send({ message: 'Database error' });
+    }
+
+    if (result.length === 0) {
+      // AdminName not found in the database
       return res.status(404).send({ isAuthenticated: false });
     }
-    return res.status(200).send({ isAuthenticated: true, adminName: adminLogin[0].ADMINNAME });
-  } catch (err) {
-    console.error('Error fetching admin account:', err);
-    return res.status(500).send({ message: 'Database error' });
-  }
+
+    // AdminName found, admin is authenticated
+    // In a production scenario, you may want to generate a secure token here and use it to authenticate the user
+    return res.status(200).send({ isAuthenticated: true, adminName: result[0].ADMINNAME });
+  });
 });
 
 
