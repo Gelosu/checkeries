@@ -63,7 +63,7 @@ export default function Login() {
 
   return (
     <main className="container vh-100 d-flex justify-content-center align-items-center">
-      <section className="col-lg-5 py-5 d-flex justify-content-center align-items-center flex-column border border-dark h-50 rounded-3">
+      <section className="col-lg-5 py-4 d-flex justify-content-center align-items-center flex-column border border-dark rounded-3">
         <form
           className="d-flex justify-content-center align-items-center flex-column col-12"
           onSubmit={handleSubmit(submitForm)}

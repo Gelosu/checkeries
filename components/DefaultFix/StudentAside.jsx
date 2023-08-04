@@ -1,8 +1,39 @@
 "use client"
 import Link from "next/link";
-import { useState } from "react";
+import { useState , useEffect } from "react";
 
 export default function StudentAside() {
+  const [FIRSTNAME, setFIRSTNAME] = useState('');
+  const [SURNAME, setSURNAME] = useState('');
+  const [COURSE, setCOURSE] = useState('');
+  const [YEAR, setYEAR] = useState('');
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = () => {
+    axios({
+      method: 'get',
+      withCredentials: true,
+      url: 'http://localhost:3001/studinfo'
+    })
+      .then((res) => {
+        if (res.data.FIRSTNAME) {
+          setFIRSTNAME(res.data.FIRSTNAME);
+          setSURNAME(res.data.SURNAME);
+          setCOURSE(res.data.COURSE);
+          setYEAR(resd.data.YEAR);
+        } else {
+          console.log('sStudent not found');
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+
   const [navs, setNavs] = useState(false);
   const animate = () => {
     setNavs(!navs)
@@ -13,8 +44,8 @@ export default function StudentAside() {
           <div className={navs ? "custom-hov2 flex-column text-center" : "custom-hov1 d-md-flex flex-column text-center"}>
             <div className="Circle2 align-self-center"></div>
             <p className="my-2">&#123;TUPC-**-****&#125;</p>
-            <p className="my-2">&#123;NAME&#125;</p>
-            <small>&#123;COURSE, YEAR, SECTION&#125;</small>
+            <p className="my-2">&#123;{SURNAME}, {FIRSTNAME}&#125;</p>
+            <small>&#123;{COURSE}, {YEAR} &#125;</small>
           </div>
           <input type="checkbox" className={navs ? "custom-c" : "custom-v"} onClick={animate}/>
           <div className={navs ? "custom-hov2 flex-column align-self-start px-2" : "custom-hov1 d-md-flex flex-column align-self-start px-2"}>
