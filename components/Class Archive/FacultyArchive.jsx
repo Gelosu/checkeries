@@ -1,34 +1,93 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import axios from "axios";
 
 export default function FacultyArchive() {
   const [classes, setClasses] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [cName, setcName] = useState("");
   const [sName, setsName] = useState("");
-  const addClass = () => {
-    if (inputValue.trim() !== "") {
-      const info = {
-        ClassesName:cName,
-        ClassCode:inputValue,
-        SubjectName:sName
-      }
-      setClasses([...classes, info]);
-      
-    }
-    setInputValue("");
-    setcName("");
-    setsName("");
-  };
-  const deleteClass = (index) => {
-    const updatedClass = [...classes];
-    updatedClass.splice(index, 1);
-    setClasses(updatedClass);
-  };
+
+  useEffect(() => {
+    fetchAndSetClasses(); // Fetch classes initially
+
+    //for some reason continuous count sya dito ahahhaha
+    const interval = setInterval(fetchAndSetClasses, 1000); // Poll every 5 seconds
   
+   return () => clearInterval(interval); // Clean up the interval on unmount
+  }, []);
+
+
+  //classa fetching
+  const fetchAndSetClasses = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/classes");
+      if (response.status === 200) {
+        setClasses(response.data);
+      } else {
+        console.error("Error fetching classes");
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    }
+  };
+
+  const fetchClasses = async () => {
+    await fetchAndSetClasses();
+  };
+
+
+  //class adding
+  const addClass = async () => {
+    if (inputValue.trim() !== "" && cName.trim() !== "" && sName.trim() !== "") {
+      console.log("inputValue:", inputValue);
+      console.log("classname:", cName);
+      console.log("subjectname:", sName);
+      const newClass = {
+        class_code: inputValue,
+        class_name: cName,
+        subject_name: sName
+      };
+      console.log("Sending data:", newClass); // Log the data being sent
+     
+
+
+      try {
+        const response = await axios.post("http://localhost:3001/addclass", newClass);
+        if (response.status === 201) {
+          fetchClasses();
+          setInputValue("");
+          setcName("");
+          setsName("");
+        } else {
+          console.error("Error adding class");
+          
+        
+        }
+      } catch (error) {
+        console.error("Error adding class:", error);
+      }
+    }
+  };
+
+  //deleteclass
+  const deleteClass = async (class_name) => {
+    try {
+      const response = await axios.delete(`http://localhost:3001/deleteclass/${class_name}`);
+      if (response.status === 200) {
+        fetchClasses();
+      } else {
+        console.error("Error deleting class");
+      }
+    } catch (error) {
+      console.error("Error deleting class:", error);
+    }
+  };
+
+
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
@@ -105,8 +164,8 @@ export default function FacultyArchive() {
         {/* End MODAL */}
         {/* Start */}
         <div className="d-flex flex-wrap flex-start pt-2 ">
-          {Object.values(classes).map((data, index) => (
-            <section   className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark">
+        {classes.map((data, index) => (
+  <section key={index} className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark">
               <div className="text-end">
                 <Image
                   src="/three-dots.svg"
@@ -124,7 +183,7 @@ export default function FacultyArchive() {
                   <li>
                     <a
                       className="dropdown-item"
-                      onClick={() => deleteClass(index)}
+                      onClick={() => deleteClass(data.class_name)}
                       
                     >
                       Remove Class
@@ -134,7 +193,7 @@ export default function FacultyArchive() {
               </div>
               <Link href={{pathname:"/Classroom/F/Test"}} className="link-dark text-decoration-none">
                 <p  className="text-center">
-                  {data.ClassesName}
+                {data.class_name}
                 </p>
               </Link>
             </section>

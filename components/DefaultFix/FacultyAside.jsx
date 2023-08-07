@@ -1,9 +1,59 @@
-"use client"
+"use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation"; // Import the useRouter hook from 'next/router'
+import axios from "axios";
 
 export default function FacultyAside() {
+  const [TUPCID, setTUPCID] = useState("");
+  const [accountType, setAccountType] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [FIRSTNAME, setFIRSTNAME] = useState("");
+  const [SURNAME, setSURNAME] = useState("");
+  const [SUBJECTDEPT, setSUBJECTDEPT] = useState("");
   const [navs, setNavs] = useState(false);
+  
+
+  useEffect(() => {
+    
+    const TUPCIDFromQuery = searchParams.get("TUPCID");
+    const accountTypeFromQuery = searchParams.get("accountType");
+    console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
+    console.log("accountTypeFromQuery:", accountTypeFromQuery);
+
+    if (TUPCIDFromQuery) {
+      setTUPCID(TUPCIDFromQuery);
+    }
+    if (accountTypeFromQuery) {
+      setAccountType(accountTypeFromQuery);
+    }
+  }, [router.query]);
+
+  useEffect(() => {
+    const fetchFacultyInfo = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3001/facultyinfo/${TUPCID}`
+        );
+        const { FIRSTNAME, SURNAME, SUBJECTDEPT} = response.data;
+        setFIRSTNAME(FIRSTNAME);
+        setSURNAME(SURNAME);
+        setSUBJECTDEPT(SUBJECTDEPT);
+        
+        console.log(response.data); 
+      } catch (error) {
+        console.log("Error fetching FACULTY data:", error);
+      }
+    };
+  
+    if (TUPCID && accountType) {
+      fetchFacultyInfo();
+    }
+  }, [TUPCID, accountType]);
+
+
+
   const animate = () => {
     setNavs(!navs)
   }
@@ -12,9 +62,9 @@ export default function FacultyAside() {
         <div className="d-flex flex-column align-items-center justify-content-between pt-2 text-white vh-100">
           <div className={navs ? "custom-hov2 flex-column text-center" : "custom-hov1 d-md-flex flex-column text-center"}>
             <div className="Circle2 align-self-center"></div>
-            <p className="my-2">&#123;TUPC-**-****&#125;</p>
-            <p className="my-2">&#123;NAME&#125;</p>
-            <small>&#123;SUBJECT DEPARTMENT&#125;</small>
+            <p className="my-2">{TUPCID}</p>
+            <p className="my-2">{SURNAME}, {FIRSTNAME}</p>
+            <small>{SUBJECTDEPT}</small>
           </div>
           <input type="checkbox" className={navs ? "custom-c" : "custom-v"} onClick={animate}/>
           <div className={navs ? "custom-hov2 flex-column align-self-start px-2" : "custom-hov1 d-md-flex flex-column align-self-start px-2"}>
