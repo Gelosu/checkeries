@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useTupcid } from '@/app/provider';
 
 export default function Login() {
-  
+  const {setTupcids} = useTupcid();
   const [error, setError] = useState('');
   const router = useRouter();
   const tupcRegExp = /TUPC-\d{2}-\d{4}$/;
@@ -38,11 +39,13 @@ export default function Login() {
       console.log('Response from server:', response.data);
       const accountType = response.data.accountType;
       console.log('Received account type:', accountType);
-
+      
       if (accountType === 'student') {
+        setTupcids(TUPCID)
         console.log('Redirect to student page');
         router.push(`/Classroom/S?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else if (accountType === 'faculty') {
+        setTupcids(TUPCID)
         console.log('Redirect to faculty page');
         router.push(`/Classroom/F?TUPCID=${TUPCID}&accountType=${accountType}`);
       } else {

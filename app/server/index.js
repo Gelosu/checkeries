@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const connection = require('./db');
 const bcryptjs = require('bcryptjs');
 const nodemailer = require('nodemailer'); // Import nodemailer for sending emails
+const moment = require('moment');
 
 
 
@@ -832,17 +833,19 @@ app.get('/facultyinfo/:TUPCID', async (req, res) => {
 //faculty add and delete class
 
 // Endpoint to add a new class
-app.post("/addclass", (req, res) => {
-  const { class_code ,class_name, subject_name } = req.body;
-  
-  const query = `INSERT INTO class_table (class_code, class_name, subject_name) VALUES (?, ?, ?)`;
-  connection.query(query, [class_code, class_name, subject_name], (error, results) => {
+app.post('/addclass', (req, res) => {
+  const { account_id, class_code, class_name, subject_name } = req.body;
+
+  const createdAt = moment().format('YYYY-MM-DD HH:mm:ss'); // Format the created_at value
+
+  const query = `INSERT INTO class_table (account_id, class_code, class_name, subject_name, created_at) VALUES (?, ?, ?, ?, ?)`;
+  connection.query(query, [account_id, class_code, class_name, subject_name, createdAt], (error, results) => {
     if (error) {
-      console.error("Error adding class: ", error);
-      res.status(500).send("Error adding class");
+      console.error('Error adding class: ', error);
+      res.status(500).send('Error adding class');
     } else {
-      console.log("Class added successfully");
-      res.status(201).send("Class added successfully");
+      console.log('Class added successfully');
+      res.status(201).send('Class added successfully');
     }
   });
 });
@@ -850,8 +853,9 @@ app.post("/addclass", (req, res) => {
 // Endpoint to delete a class by classCode
 app.delete("/deleteclass/:class_name", (req, res) => {
   const class_name = req.params.class_name;
+  
 
-  const query = 'DELETE FROM class_table WHERE class_name = ?';
+  const query = 'DELETE FROM class_table WHERE class_name = ? ';
   connection.query(query, [class_name], (error, results) => {
     if (error) {
       console.error("Error deleting class: ", error);
@@ -865,21 +869,37 @@ app.delete("/deleteclass/:class_name", (req, res) => {
   });
 });
 
-
-// Endpoint to fetch all classes
+//not working
 app.get("/classes", (req, res) => {
-  const query = "SELECT * FROM class_table"; // 
-  connection.query(query, (error, results) => {
-    if (error) {
+  const account_id = req.query.account_id;
+ const query = "SELECT * FROM class_table WHERE account_id=?";
+  console.log('accountid:', account_id);
+  connection.query(query, [account_id], (error, results) => {
+   if (error) {
       console.error("Error fetching classes: ", error);
-      res.status(500).send("Error fetching classes");
-    } else {
+     res.status(500).send("Error fetching classes");
+  } else {
       console.log("Classes fetched successfully");
       res.status(200).json(results);
-    }
-  });
+   }
+ });
 });
 
+
+//working but not relying on id
+//app.get("/classes", (req, res) => {
+  ///const query = "SELECT * FROM class_table";
+  
+  //connection.query(query, (error, results) => {
+   //if (error) {
+   //   console.error("Error fetching classes: ", error);
+   //  res.status(500).send("Error fetching classes");
+   //} else {
+    // console.log("Classes fetched successfully");
+   //  res.status(200).json(results);
+  // }
+ // });
+//});
 
 //for server
 app.listen(3001, () => {

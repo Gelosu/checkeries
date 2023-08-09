@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 export default function FacultyClassTest() {
   const [test, setTest] = useState([]);
   const [testName, setTestName] = useState("");
   const [renametest, setRenameTest] = useState("");
-
+  const searchparams = useSearchParams();
+  const classnames = searchparams.get("classnames")
   const addTest = () => {
     if (testName.trim() !== "") {
       setTest([...test, testName]);
@@ -35,7 +37,7 @@ export default function FacultyClassTest() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>CLASS NAME</span>
+          <span>{classnames}</span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark">
