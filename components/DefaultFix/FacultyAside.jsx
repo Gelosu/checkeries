@@ -1,53 +1,34 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // Import the useRouter hook from 'next/router'
 import axios from "axios";
 import { useTupcid } from "@/app/provider";
 
 export default function FacultyAside() {
-  const {tupcids} = useTupcid();
-  const [accountType, setAccountType] = useState("");
+  var {tupcids} = useTupcid();
   const [FIRSTNAME, setFIRSTNAME] = useState("");
   const [SURNAME, setSURNAME] = useState("");
   const [SUBJECTDEPT, setSUBJECTDEPT] = useState("");
   const [navs, setNavs] = useState(false);
-  
-
-  // useEffect(() => {
-    
-  //   const tupcidsFromQuery = searchParams.get("tupcids");
-  //   const accountTypeFromQuery = searchParams.get("accountType");
-  //   console.log("tupcidsFromQuery:", tupcidsFromQuery);
-  //   console.log("accountTypeFromQuery:", accountTypeFromQuery);
-
-  //   if (tupcidsFromQuery) {
-  //     settupcids(tupcidsFromQuery);
-  //   }
-  //   if (accountTypeFromQuery) {
-  //     setAccountType(accountTypeFromQuery);
-  //   }
-  // }, [router.query]);
 
   useEffect(() => {
-    const fetchFacultyInfo = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:3001/facultyinfo/${tupcids}`
-        );
-        const { FIRSTNAME, SURNAME, SUBJECTDEPT } = response.data;
-        setFIRSTNAME(FIRSTNAME);
-        setSURNAME(SURNAME);
-        setSUBJECTDEPT(SUBJECTDEPT);
+          const response = await axios.get(
+            `http://localhost:3001/facultyinfo/${tupcids}`
+          );
+          const { FIRSTNAME, SURNAME, SUBJECTDEPT } = response.data;
+          setFIRSTNAME(FIRSTNAME);
+          setSURNAME(SURNAME);
+          setSUBJECTDEPT(SUBJECTDEPT);
   
-        console.log(response.data);
-      } catch (error) {
+        
+          }
+      catch (error) {
         console.log("Error fetching FACULTY data:", error);
       }
-    };
-    if (tupcids) {
-      fetchFacultyInfo();
     }
+    fetchData();
   }, [tupcids]);
 
 

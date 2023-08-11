@@ -4,53 +4,26 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
-import { useTupcid } from "@/app/provider";
 
 export default function FacultyArchive() {
   const [classes, setClasses] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [cName, setcName] = useState("");
   const [sName, setsName] = useState("");
-  const { tupcids } = useTupcid();
 
   useEffect(() => {
     fetchAndSetClasses(); // Fetch classes initially
-    const interval = setInterval(fetchAndSetClasses, 1000); // Poll every 1 second
-
+    const interval = setInterval(fetchAndSetClasses, 1000); // Poll every 5 seconds
+  
     return () => clearInterval(interval); // Clean up the interval on unmount
   }, []);
 
-  //const fetchAndSetClasses = async () => {
-    //try {
-      //console.log("Fetching classes...");
-      //const response = await axios.get("http://localhost:3001/classes", {
-       // params: {
-          //account_id: tupcids, // Pass the account_id as a parameter
-        //},
-      //});
-      //if (response.status === 200) {
-       // console.log("Fetched classes data:", response.data);
-        //setClasses(response.data);
-     // } else {
-       // console.error("Error fetching classes");
-     // }
-    //} catch (error) {
-     // console.error("Error fetching classes:", error);
-   // }
 
-  //wporking but not relying on account_id..
-
+  //classa fetching
   const fetchAndSetClasses = async () => {
     try {
-      console.log("Fetching classes...");
-      const response = await axios.get("http://localhost:3001/classes", {
-       params: {
-          account_id: tupcids, // Pass the account_id as a parameter
-        },
-      });
+      const response = await axios.get("http://localhost:3001/classes");
       if (response.status === 200) {
-        console.log("Fetched classes data:", response.data);
-        console.log('account id received: ', tupcids)
         setClasses(response.data);
       } else {
         console.error("Error fetching classes");
@@ -59,25 +32,22 @@ export default function FacultyArchive() {
       console.error("Error fetching classes:", error);
     }
   };
-  
 
   const fetchClasses = async () => {
     await fetchAndSetClasses();
   };
 
- 
+
   //class adding
   const addClass = async () => {
     if (inputValue.trim() !== "" && cName.trim() !== "" && sName.trim() !== "") {
       console.log("inputValue:", inputValue);
       console.log("classname:", cName);
       console.log("subjectname:", sName);
-      console.log("accountid:", tupcids);
       const newClass = {
         class_code: inputValue,
         class_name: cName,
-        subject_name: sName,
-        account_id: tupcids
+        subject_name: sName
       };
       setInputValue("");
       setcName("");
@@ -104,15 +74,13 @@ export default function FacultyArchive() {
     }
   };
 
+  //deleteclass
   const deleteClass = async (class_name) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/deleteclass/${class_name}`, {
-        data: {
-          account_id: tupcids 
-        },
-      });
+      const response = await axios.delete(`http://localhost:3001/deleteclass/${class_name}`);
       if (response.status === 200) {
         fetchClasses();
+        console.log("class deleted")
       } else {
         console.error("Error deleting class");
       }
@@ -121,11 +89,11 @@ export default function FacultyArchive() {
     }
   };
 
+
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
         <h3>FACULTY</h3>
-        <h5>TUPCID:{tupcids} </h5>
         <button
           type="button"
           className="btn btn-outline-dark pe-3"
@@ -197,46 +165,42 @@ export default function FacultyArchive() {
         </div>
         {/* End MODAL */}
         {/* Start */}
-        <div className="d-flex flex-wrap flex-start pt-2">
-  {classes.map((data, index) => (
-    <section
-      key={index}
-      className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark"
-    >
-      <div className="text-end">
-        <Image
-          src="/three-dots.svg"
-          width={20}
-          height={20}
-          role="button"
-          id="dropdownMenuLink"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        />
-        <ul className="dropdown-menu" aria-labelledby="dropdownMenuLink">
-          <li>
-            <a
-              className="dropdown-item"
-              onClick={() => deleteClass(data.class_name)}
-            >
-              Remove Class
-            </a>
-          </li>
-        </ul>
-      </div>
-      <Link
-        key={index}
-        href={{
-          pathname: "/Classroom/F/Test",
-          query: { classnames: data.class_name },
-        }}
-        className="link-dark text-decoration-none"
-      >
-        <p className="text-center">{data.class_name}</p>
-      </Link>
-    </section>
-  ))}
-</div>
+        <div className="d-flex flex-wrap flex-start pt-2 ">
+        {classes.map((data, index) => (
+  <section key={index} className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark">
+              <div className="text-end">
+                <Image
+                  src="/three-dots.svg"
+                  width={20}
+                  height={20}
+                  role="button"
+                  id="dropdownMenuLink"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                />
+                <ul
+                  className="dropdown-menu"
+                  aria-labelledby="dropdownMenuLink"
+                >
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      onClick={() => deleteClass(data.class_name)}
+                      
+                    >
+                      Remove Class
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <Link key={index} href={{pathname:"/Classroom/F/Test", query:{classnames: data.class_name, classcode: data.class_code, subjectname: data.subject_name}}} className="link-dark text-decoration-none">
+                <p  className="text-center">
+                {data.class_name}
+                </p>
+              </Link>
+            </section>
+          ))}
+        </div>
       </section>
     </main>
   );

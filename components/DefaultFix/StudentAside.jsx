@@ -3,37 +3,34 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation"; // Import the useRouter hook from 'next/router'
 import axios from "axios";
+import { useTupcid } from "@/app/provider";
 
 export default function StudentAside() {
+  const {tupcids} = useTupcid();
   const [FIRSTNAME, setFIRSTNAME] = useState("");
   const [SURNAME, setSURNAME] = useState("");
   const [COURSE, setCOURSE] = useState("");
   const [YEAR, setYEAR] = useState("");
   const [navs, setNavs] = useState(false);
-  const [TUPCID, setTUPCID] = useState("");
-  const [accountType, setAccountType] = useState("");
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const TUPCIDFromQuery = searchParams.get("TUPCID");
-    const accountTypeFromQuery = searchParams.get("accountType");
-    console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
-    console.log("accountTypeFromQuery:", accountTypeFromQuery);
+  // useEffect(() => {
+  //   const TUPCIDFromQuery = searchParams.get("TUPCID");
+  //   const accountTypeFromQuery = searchParams.get("accountType");
+  //   console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
+  //   console.log("accountTypeFromQuery:", accountTypeFromQuery);
 
-    if (TUPCIDFromQuery) {
-      setTUPCID(TUPCIDFromQuery);
-    }
-    if (accountTypeFromQuery) {
-      setAccountType(accountTypeFromQuery);
-    }
-  }, [router.query]);
-  console.log(FIRSTNAME)
+  //   if (TUPCIDFromQuery) {
+  //     setTUPCID(TUPCIDFromQuery);
+  //   }
+  //   if (accountTypeFromQuery) {
+  //     setAccountType(accountTypeFromQuery);
+  //   }
+  // }, [router.query]);
   useEffect(() => {
     const fetchStudentInfo = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3001/studinfo/${TUPCID}`
+          `http://localhost:3001/studinfo/${tupcids}`
         );
         const { FIRSTNAME, SURNAME, COURSE, YEAR } = response.data;
         setFIRSTNAME(FIRSTNAME);
@@ -45,11 +42,8 @@ export default function StudentAside() {
         console.log("Error fetching student data:", error);
       }
     };
-  
-    if (TUPCID && accountType) {
-      fetchStudentInfo();
-    }
-  }, [TUPCID, accountType]);
+    fetchStudentInfo()
+  }, [tupcids]);
 
   const animate = () => {
     setNavs(!navs);
@@ -72,7 +66,7 @@ export default function StudentAside() {
           }
         >
           <div className="Circle2 align-self-center"></div>
-          <p className="my-2">{TUPCID}</p>
+          <p className="my-2">{tupcids}</p>
           <p className="my-2">
             {SURNAME}, {FIRSTNAME}
           </p>

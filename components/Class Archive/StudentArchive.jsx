@@ -3,22 +3,46 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import axios from "axios"; // Import Axios for making API requests
 
 export default function StudentArchive() {
   const [classCode, setClassCode] = useState([]);
   const [inputValue, setInputValue] = useState("");
+  const [message, setMessage] = useState(""); // State for showing messages
 
-  const addClass = () => {
+  const addClass = async () => {
     if (inputValue.trim() !== "") {
-      setClassCode([...classCode, inputValue]);
-      setInputValue("");
+      try {
+        console.log('classcode input: ', inputValue)
+        // Send a request to your API to check if the class code exists
+        const response = await axios.get(
+         
+          `http://localhost:3001/checkclass/${inputValue}`
+        );
+        console.log('Response data:', response.data);
+        
+        // Check the response to determine whether the class code exists
+        if (response.data.exists) {
+          setClassCode(prevClassCode => [...prevClassCode, inputValue]);
+        console.log('Updated classCode array:', classCode);
+          setInputValue("");
+          setMessage("Class code found!");
+        } else {
+          setMessage("Class code not found.");
+        }
+      } catch (error) {
+        console.log("Error checking class code:", error);
+        setMessage("An error occurred while checking the class code.");
+      }
     }
   };
+
+  
+
   const deleteClass = (index) => {
     const updatedClass = [...classCode];
     updatedClass.splice(index, 1);
     setClassCode(updatedClass);
-    console.log(classCode)
   };
 
   
@@ -84,8 +108,9 @@ export default function StudentArchive() {
         {/* End MODAL */}
         {/* Start */}
         <div className="d-flex flex-wrap flex-start pt-2 ">
-          {classCode.map((classC, index) => (
-              <section className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark">
+          {classCode.map((classC, index) => ( 
+              <section className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark"
+              key={index}>
                 <div className="text-end">
                   <Image
                     src="/three-dots.svg"
@@ -119,6 +144,7 @@ export default function StudentArchive() {
               </section>
           ))}
         </div>
+        {message && <p>{message}</p>}
       </section>
     </main>
   );

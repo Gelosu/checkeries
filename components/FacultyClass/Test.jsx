@@ -1,13 +1,22 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
+
 export default function FacultyClassTest() {
   const [test, setTest] = useState([]);
   const [testName, setTestName] = useState("");
   const [renametest, setRenameTest] = useState("");
   const searchparams = useSearchParams();
-  const classnames = searchparams.get("classnames")
+  const classnames = searchparams.get("classnames");
+  const classcode = searchparams.get("classcode");
+  const subjectname = searchparams.get("subjectname")
+
+
+
+
+
   const addTest = () => {
     if (testName.trim() !== "") {
       setTest([...test, testName]);
@@ -38,17 +47,28 @@ export default function FacultyClassTest() {
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
           <span>{classnames}</span>
+          <span>{subjectname}</span>
+          <span>{classcode}</span>
+         
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark">
             <h4>TEST</h4>
           </a>
-          <a
-            href="/Classroom/F/Students"
-            className="link-dark text-decoration-none"
-          >
-            <h4>STUDENTS</h4>
-          </a>
+          <Link
+    href={{
+      pathname: "/Classroom/F/Students",
+      query: {
+        classnames: classnames,
+        classcode: classcode,        
+        subjectname: subjectname,    
+      },
+    }}
+    className="link-dark text-decoration-none"
+  >
+    <h4>STUDENTS</h4>
+  </Link>
+          
         </div>
         <div className="d-flex gap-3">
           <button
@@ -90,7 +110,7 @@ export default function FacultyClassTest() {
               </div>
               <div className="modal-body px-5">
                 <h4 className="text-center mb-2">ADDING TEST</h4>
-                <p className="text-start mb-1 ">CLASS NAME</p>
+                <p className="text-start mb-1 ">TEST NAME</p>
                 <input
                   type="text"
                   className="py-1 px-3 border border-dark w-100 rounded text-start"

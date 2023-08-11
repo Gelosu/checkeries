@@ -1,11 +1,20 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+
+
 export default function FacultyClassStudent() {
   const [studlist, setStudlist] = useState([]);
   const [studname, setStudname] = useState("");
   const [tupcId, setTupcId] = useState("");
   const [status, setStatus] = useState("");
+  const searchparams = useSearchParams();
+  const classnames = searchparams.get("classnames");
+  const classcode = searchparams.get("classcode");
+  const subjectname = searchparams.get("subjectname")
+
+
   const addSTUD = () => {
     if (tupcId.trim() !== "") {
       const infor = {
@@ -34,15 +43,29 @@ export default function FacultyClassStudent() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>CLASS NAME</span>
+          <span>{classnames}</span>
+          <span>{subjectname}</span>
+          <span>{classcode}</span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
-          <a className="link-dark text-decoration-none">
+        <Link
+            href={{
+              pathname: "/Classroom/F/Test",
+              query: {
+                classnames: classnames,
+                classcode: classcode,
+                subjectname: subjectname,
+              },
+            }}
+            className="link-dark text-decoration-none"
+          >
             <h4>TEST</h4>
+          </Link>
+          <a className="link-dark">
+          <h4>STUDENTS</h4>
           </a>
-          <a href="/Classroom/F/Students" className="link-dark ">
-            <h4>STUDENTS</h4>
-          </a>
+            
+          
         </div>
         {/* BUTTONS */}
         <div className="d-flex gap-3">
@@ -86,7 +109,7 @@ export default function FacultyClassStudent() {
                 ></button>
               </div>
               <div className="modal-body px-5">
-                <h4 className="text-center mb-2">ADDING TEST</h4>
+                <h4 className="text-center mb-2">ADDING STUDENT</h4>
                 <p className="text-start mb-1 ">TUPCID</p>
                 <input
                   type="text"
@@ -101,7 +124,7 @@ export default function FacultyClassStudent() {
                   onChange={(e) => setStudname(e.target.value)}
                   value={studname}
                 />
-                <p className="text-start mb-1 ">TUPCID</p>
+                <p className="text-start mb-1 ">STATUS</p>
                 <select
                   type="text"
                   className="py-1 px-3 border border-dark w-100 rounded text-start"
@@ -173,15 +196,7 @@ export default function FacultyClassStudent() {
         {/* Start */}
         <div className="container-fluid d-flex pt-3 flex-column gap-2 px-0">
           <div className="d-flex text-center justify-content-between mb-2">
-            <h4 className="col-2 border border-dark py-1 px-3 m-0 rounded">
-              ID NO.
-            </h4>
-            <h4 className="col-7 border border-dark py-1 px-3 m-0 rounded">
-              STUDENT NAME
-            </h4>
-            <h4 className="col-2 border border-dark py-1 px-3 m-0 rounded">
-              STATUS
-            </h4>
+            //id , name, status
           </div>
           {Object.values(studlist).map((lists, index) => (
             <div>
