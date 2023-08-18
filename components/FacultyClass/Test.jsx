@@ -9,14 +9,9 @@ export default function FacultyClassTest() {
   const [testName, setTestName] = useState("");
   const [renametest, setRenameTest] = useState("");
   const searchparams = useSearchParams();
-  const classnames = searchparams.get("classnames");
-  const classcode = searchparams.get("classcode");
-  const subjectname = searchparams.get("subjectname")
-
-
-
-
-
+  const classname = searchparams.get("classname")
+   const subjectname = searchparams.get("subjectname")
+    const classcode = searchparams.get("classcode")
   const addTest = () => {
     if (testName.trim() !== "") {
       setTest([...test, testName]);
@@ -46,10 +41,7 @@ export default function FacultyClassTest() {
           <a href="/Classroom/F" className="align-self-center pb-1">
             <img src="/back-arrow.svg" height={30} width={40} />
           </a>
-          <span>{classnames}</span>
-          <span>{subjectname}</span>
-          <span>{classcode}</span>
-         
+          <span>{classname} CLASSCODE: {classcode} SUBJECT: {subjectname}</span>
         </h3>
         <div className="d-flex gap-3 py-3 ">
           <a className="link-dark">
@@ -59,7 +51,7 @@ export default function FacultyClassTest() {
     href={{
       pathname: "/Classroom/F/Students",
       query: {
-        classnames: classnames,
+        classname: classname,
         classcode: classcode,        
         subjectname: subjectname,    
       },
@@ -68,7 +60,6 @@ export default function FacultyClassTest() {
   >
     <h4>STUDENTS</h4>
   </Link>
-          
         </div>
         <div className="d-flex gap-3">
           <button
@@ -110,7 +101,7 @@ export default function FacultyClassTest() {
               </div>
               <div className="modal-body px-5">
                 <h4 className="text-center mb-2">ADDING TEST</h4>
-                <p className="text-start mb-1 ">TEST NAME</p>
+                <p className="text-start mb-1 ">CLASS NAME</p>
                 <input
                   type="text"
                   className="py-1 px-3 border border-dark w-100 rounded text-start"

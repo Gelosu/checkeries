@@ -1,48 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import Image from "next/image";
-import Link from "next/link";
-import axios from "axios"; // Import Axios for making API requests
+import axios from "axios"
+import { useTupcid } from "@/app/provider";
 
 export default function StudentArchive() {
-  const [classCode, setClassCode] = useState([]);
+  const [classData, setClassData] = useState([]);
   const [inputValue, setInputValue] = useState("");
-  const [message, setMessage] = useState(""); // State for showing messages
+  const [message, setMessage] = useState("");
+  const [userClasses, setUserClasses] = useState([]);
+  var {tupcids} = useTupcid();
+
+
+  useEffect(() => {
+    const fetchClassesInterval = setInterval(() => {
+      fetchUserClasses(tupcids).then((classes) => {
+        setUserClasses(classes);
+      });
+    }, 1000); // Fetch classes every 1000 milliseconds (1 second)
+  
+    return () => {
+      clearInterval(fetchClassesInterval); // Clean up the interval on unmount
+    };
+  }, [tupcids]);
+
+
+
+  const fetchUserClasses = async (tupcid) => {
+    try {
+      const response = await axios.get(`http://localhost:3001/getclasses/${tupcid}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user classes:", error);
+      return [];
+    }
+  };
+  
+
+
 
   const addClass = async () => {
     if (inputValue.trim() !== "") {
       try {
-        console.log('classcode input: ', inputValue)
-        // Send a request to your API to check if the class code exists
         const response = await axios.get(
-         
           `http://localhost:3001/checkclass/${inputValue}`
         );
-        console.log('Response data:', response.data);
-        
-        // Check the response to determine whether the class code exists
         if (response.data.exists) {
-          setClassCode(prevClassCode => [...prevClassCode, inputValue]);
-        console.log('Updated classCode array:', classCode);
-          setInputValue("");
-          setMessage("Class code found!");
+          // Fetch subject name based on class code
+          const subjectResponse = await axios.get(
+            `http://localhost:3001/getsubjectname/${inputValue}`
+          );
+          if (subjectResponse.status === 200) {
+            const subjectName = subjectResponse.data.subject_name;
+  
+            // Send a POST request to add the class to studentclass_table
+            const addClassResponse = await axios.post("http://localhost:3001/addclassstud", {
+              TUPCID: tupcids, // Replace with the actual TUPCID
+              class_code: inputValue,
+              subject_name: subjectName,
+            });
+  
+            if (addClassResponse.status === 201) {
+              setClassCode((prevClassCode) => [
+                ...prevClassCode,
+                {
+                  class_code: inputValue,
+                  subject_name: subjectName,
+                },
+              ]);
+              setInputValue("");
+              setMessage("");
+            } else {
+              console.error("Error adding class");
+              setMessage("Error adding class");
+            }
+          } else {
+            console.error("Error fetching subject name");
+            setMessage("Error fetching subject name");
+          }
         } else {
           setMessage("Class code not found.");
         }
       } catch (error) {
         console.log("Error checking class code:", error);
+        if (error.response && error.response.data) {
+          console.log("Server response:", error.response.data);
+        }
         setMessage("An error occurred while checking the class code.");
       }
     }
   };
-
+  
   
 
-  const deleteClass = (index) => {
-    const updatedClass = [...classCode];
-    updatedClass.splice(index, 1);
-    setClassCode(updatedClass);
+  const deleteEnrollment = async (TUPCID, subjectName) => {
+    try {
+      const response = await axios.delete(`http://localhost:3001/deletestudentenrollment/${TUPCID}/${subjectName}`);
+      if (response.status === 200) {
+        console.log("Enrollment deleted successfully");
+
+        // Update the userClasses state after deleting enrollment
+        const updatedUserClasses = userClasses.filter(
+          (classData) =>
+            classData.TUPCID !== TUPCID || classData.subject_name !== subjectName
+        );
+        setUserClasses(updatedUserClasses);
+      } else {
+        console.error("Error deleting enrollment");
+      }
+    } catch (error) {
+      console.error("Error deleting enrollment:", error);
+    }
   };
 
   
@@ -108,7 +177,7 @@ export default function StudentArchive() {
         {/* End MODAL */}
         {/* Start */}
         <div className="d-flex flex-wrap flex-start pt-2 ">
-          {classCode.map((classC, index) => ( 
+        {userClasses.map((classData, index) => ( 
               <section className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark"
               key={index}>
                 <div className="text-end">
@@ -128,8 +197,12 @@ export default function StudentArchive() {
                     <li>
                       <a
                         className="dropdown-item"
-                        onClick={() => deleteClass(index)}
-                        key={index}
+                        onClick={() =>  deleteEnrollment(
+                          classData.TUPCID,
+                          classData.subject_name
+                        )
+                      }
+                      key={index}
                       >
                         Remove Class
                       </a>
@@ -138,13 +211,12 @@ export default function StudentArchive() {
                 </div>
                 <a href="/Classroom/S/Result" className="text-decoration-none link-dark">
                   <p key={index} className="text-center">
-                    {classC}
+                  {classData.subject_name}
                   </p>
                 </a>
               </section>
           ))}
         </div>
-        {message && <p>{message}</p>}
       </section>
     </main>
   );

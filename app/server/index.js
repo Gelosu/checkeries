@@ -833,16 +833,16 @@ app.get('/facultyinfo/:TUPCID', async (req, res) => {
 
 // Endpoint to add a new class
 app.post("/addclass", (req, res) => {
-  const { class_code ,class_name, subject_name } = req.body;
+  const { TUPCID, class_code ,class_name, subject_name} = req.body;
   
-  const query = `INSERT INTO class_table (class_code, class_name, subject_name, created_at) VALUES (?, ?, ?, ?)`;
-  connection.query(query, [class_code, class_name, subject_name, Date()], (error, results) => {
+  const query = `INSERT INTO class_table (TUPCID, class_code, class_name, subject_name, created_at) VALUES (?,?, ?, ?, NOW())`;
+  connection.query(query, [TUPCID,class_code, class_name, subject_name ], (error, results) => {
     if (error) {
       console.error("Error adding class: ", error);
       res.status(500).send("Error adding class");
     } else {
       console.log("Class added successfully");
-      res.status(201).send("Class added successfully");
+      res  .status(201).send("Class added successfully");
     }
   });
 });
@@ -867,19 +867,20 @@ app.delete("/deleteclass/:class_name", (req, res) => {
 
 
 // Endpoint to fetch all classes
-app.get("/classes", (req, res) => {
-  const query = "SELECT * FROM class_table"; // 
-  connection.query(query, (error, results) => {
-    if (error) {
-      console.error("Error fetching classes: ", error);
-      res.status(500).send("Error fetching classes");
-    } else {
-      console.log("Classes fetched successfully");
-      res.status(200).json(results);
-    }
-  });
-});
+// GET endpoint to fetch classes based on TUPCID
+app.get('/classes/:tupcids', async (req, res) => {
+  const { tupcids } = req.params;
 
+  try {
+    const query = 'SELECT * FROM class_table WHERE TUPCID = ?';
+    const [rows] = await connection.query(query, [tupcids]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+    res.status(500).json({ message: 'Failed to fetch classes' });
+  }
+});
 
 
 
@@ -888,23 +889,107 @@ app.get("/classes", (req, res) => {
 
 //code validation for aclascode..
 
-// Define API endpoint to check if class code exists
-app.get("/checkclass/:classCode", (req, res) => {
-  const classCode = req.params.classCode;
 
-  // Query the database to check if the class code exists
-  const query = "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
-  console.log("classcode finding: " , classCode)
-  connection.query(query, [classCode], (error, results) => {
-    if (error) {
-      console.error("Error checking class code:", error);
-      res.status(500).json({ error: "An error occurred while checking the class code." });
+//code validation for aclascode..GET1
+app.get('/checkclass/:classCode', async (req, res) => {
+  const { classCode } = req.params;
+
+  try {
+    console.log("classcode findings: ", classCode);
+    const query = "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
+    const [rows] = await connection.query(query, [classCode]);
+
+    const count = rows[0].count;
+    console.log(count)
+    if (count == 1) {
+      res.status(200).json({ exists: true });
+      console.log(true);
     } else {
-      const count = results[0].count;
-      const exists = count > 0;
-      res.status(200).json({ exists });
+      res.status(404).json({ exists: false, message: 'Code not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching classCode:', error);
+    res.status(500).json({ message: 'Failed to fetch classCode' });
+  }
+});
+
+
+//to get subject name
+// Endpoint to get subject name based on class code
+app.get("/getsubjectname/:classCode", async (req, res) => {
+  const { classCode } = req.params;
+
+  try {
+    const query = "SELECT subject_name FROM class_table WHERE class_code = ?";
+    const [rows] = await connection.query(query, [classCode]);
+
+    if (rows.length === 1) {
+      const subjectName = rows[0].subject_name;
+      console.log("subjectname:", subjectName)
+      res.status(200).json({ subject_name: subjectName });
+    } else {
+      res.status(404).json({ message: "Subject not found for the given class code" });
+    }
+  } catch (error) {
+    console.error("Error fetching subject name:", error);
+    res.status(500).json({ message: "Failed to fetch subject name" });
+  }
+});
+
+
+
+//post requesttt
+// Endpoint to add a new class
+app.post("/addclassstud", (req, res) => {
+  const { TUPCID, class_code, subject_name } = req.body;
+
+  const query = `INSERT INTO enrollments (TUPCID, class_code, subject_name, enrollment_date) VALUES (?, ?, ?, NOW())`;
+  connection.query(query, [TUPCID, class_code, subject_name], (error, results) => {
+    if (error) {
+      console.error("Error adding class: ", error);
+      res.status(500).send("Error adding class");
+    } else {
+      console.log("Class added successfully");
+      res.status(201).send("Class added successfully");
     }
   });
+});
+
+
+
+app.get("/getclasses/:tupcid", async (req, res) => {
+  const { tupcid } = req.params;
+
+  try {
+    const query = "SELECT * FROM enrollments WHERE TUPCID = ?";
+    const [rows] = await connection.query(query, [tupcid]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching classes:", error);
+    res.status(500).json({ message: "Failed to fetch classes" });
+  }
+});
+
+
+app.delete('/deletestudentenrollment/:TUPCID/:subjectName', async (req, res) => {
+  const { TUPCID, subjectName } = req.params;
+
+  try {
+    const deleteQuery = `
+      DELETE FROM enrollments
+      WHERE TUPCID = ? AND class_code IN (
+        SELECT class_code FROM class_table WHERE subject_name = ?
+      );
+    `;
+
+    await connection.query(deleteQuery, [TUPCID, subjectName]);
+    
+    res.status(200).json({ message: 'Enrollment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting student enrollment:', error);
+    res.status(500).json({ message: 'Failed to delete student enrollment' });
+  }
 });
 
 

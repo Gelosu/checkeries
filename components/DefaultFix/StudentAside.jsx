@@ -71,7 +71,7 @@ export default function StudentAside() {
             {SURNAME}, {FIRSTNAME}
           </p>
           <small>
-            &#123;{COURSE}, {YEAR}&#125;
+            {COURSE}, {YEAR}
           </small>
         </div>
         <input
