@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // Import the useRouter hook from 'next/router'
 import axios from "axios";
 import { useTupcid } from "@/app/provider";
 
@@ -13,19 +12,6 @@ export default function StudentAside() {
   const [YEAR, setYEAR] = useState("");
   const [navs, setNavs] = useState(false);
 
-  // useEffect(() => {
-  //   const TUPCIDFromQuery = searchParams.get("TUPCID");
-  //   const accountTypeFromQuery = searchParams.get("accountType");
-  //   console.log("TUPCIDFromQuery:", TUPCIDFromQuery);
-  //   console.log("accountTypeFromQuery:", accountTypeFromQuery);
-
-  //   if (TUPCIDFromQuery) {
-  //     setTUPCID(TUPCIDFromQuery);
-  //   }
-  //   if (accountTypeFromQuery) {
-  //     setAccountType(accountTypeFromQuery);
-  //   }
-  // }, [router.query]);
   useEffect(() => {
     const fetchStudentInfo = async () => {
       try {
@@ -37,7 +23,6 @@ export default function StudentAside() {
         setSURNAME(SURNAME);
         setCOURSE(COURSE);
         setYEAR(YEAR);
-        console.log(response.data); // This will show the fetched student data
       } catch (error) {
         console.log("Error fetching student data:", error);
       }
@@ -86,11 +71,23 @@ export default function StudentAside() {
               : "custom-hov1 d-md-flex flex-column align-self-start px-2"
           }
         >
-          <p className="my-2">SETTINGS</p>
-          <p className="my-2">REPORT PROBLEM</p>
-          <Link href="/login" className="text-decoration-none link-light">
-            <p className="fw-100 my-2">LOGOUT</p>
-          </Link>
+         <Link href={{pathname:"/Classroom/S/Setting", query:{TUPCID: tupcids}}}
+            className="text-decoration-none link-light"
+            >
+              <p className="my-2">SETTINGS</p>
+            </Link>
+            <Link href={{pathname:"/ReportProblem", query:{}}}
+            className="text-decoration-none link-light"
+            >
+              <p className="my-2">REPORT PROBLEM</p>
+            </Link>
+            
+            <Link
+              href="/login"
+              className="text-decoration-none link-light"
+            >
+              <p className="fw-100 my-2">LOGOUT</p>
+            </Link>
         </div>
       </div>
     </aside>

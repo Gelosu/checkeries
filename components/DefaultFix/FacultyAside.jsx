@@ -47,8 +47,17 @@ export default function FacultyAside() {
           </div>
           <input type="checkbox" className={navs ? "custom-c" : "custom-v"} onClick={animate}/>
           <div className={navs ? "custom-hov2 flex-column align-self-start px-2" : "custom-hov1 d-md-flex flex-column align-self-start px-2"}>
-            <p className="my-2">SETTINGS</p>
-            <p className="my-2">REPORT PROBLEM</p>
+          <Link href={{pathname:"/Classroom/F/Setting", query:{TUPCID: tupcids}}}
+            className="text-decoration-none link-light"
+            >
+              <p className="my-2">SETTINGS</p>
+            </Link>
+            <Link href={{pathname:"/ReportProblem", query:{}}}
+            className="text-decoration-none link-light"
+            >
+              <p className="my-2">REPORT PROBLEM</p>
+            </Link>
+            
             <Link
               href="/login"
               className="text-decoration-none link-light"

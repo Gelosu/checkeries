@@ -13,7 +13,9 @@
 p::-webkit-scrollbar{
   height: 2px;
 }
-
+.bg-lightgray{
+  background-color: rgb(182, 182, 182);
+}
 html{
   --scroll-behavior:smooth!important;
   scroll-behavior: smooth!important;

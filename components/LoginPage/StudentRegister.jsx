@@ -12,13 +12,15 @@ export default function StudentRegister() {
   const tupcRegExp = /TUPC-\d{2}-\d{4}$/;
   const schema = yup.object().shape({
     TUPCID: yup.string().matches(tupcRegExp, "Invalid TUPC-ID!"),
-    SURNAME: yup.string().required("Surname is Required!"),
-    FIRSTNAME: yup.string().required("Firstname is Required!"),
+    SURNAME: yup.string().required("Surname is Needed!"),
+    FIRSTNAME: yup.string().required("Firstname is Needed!"),
+    MIDDLENAME: yup.string().required("Middle name is Needed! "),
     GSFEACC: yup.string().matches(gsfeRegExp, "Invalid gsfe account!"),
     COURSE: yup.string().required("Please Choose!"),
+    SECTION: yup.string().required("Please Choose!"),
     YEAR: yup.string().required("Please Choose!"),
     STATUS: yup.string().required("Please Choose!"),
-    PASSWORD: yup.string().required("Password Required!"),
+    PASSWORD: yup.string().required("Password Needed!"),
   });
 
   const {
@@ -27,20 +29,26 @@ export default function StudentRegister() {
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
-  const onSubmit = async (data) => {
+  const submitForm = async (data) => {
     try {
       setErrorMessage("");
       console.log(data);
-      const response = await axios.post("http://localhost:3001/studreg", data);
+      router.push("/login")
+      const response = await axios.post(
+        "http://localhost:3001/studreg",
+        data
+      );
       console.log(response.data);
+      // Redirect or perform any other actions after successful registration
+      
       if (response.status === 200) {
         // Student registration successful, redirect or show success message
-        console.log("Student registered successfully!");
+        console.log("student registered successfully!");
         // Redirect or show a success message to the user
-        router.push("/login");
+        
       } else {
         // Something went wrong with the registration
-        console.log("An error occurred while registering student.");
+        console.log("An error occurred while Faculty.");
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
@@ -48,16 +56,17 @@ export default function StudentRegister() {
         setErrorMessage("TUPCID ALREADY REGISTERED");
       } else {
         console.log(error);
-        console.log("An error occurred while registering student.");
+        console.log("An error occurred while registering student");
       }
     }
   };
+  
 
   return (
     <main className="container-sm custom-h2 py-sm-5 py-3 d-flex justify-content-center align-items-center flex-column">
       <p className="mb-0 fw-bold fs-5 ">STUDENT REGISTRATION</p>
       <section className="container-sm col-lg-6 py-3 px-4 border border-dark rounded">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(submitForm)}>
           <div className="row p-sm-2 px-3">
             <p className="col-sm-6 my-1 text-sm-start text-center">TUPC ID</p>
             <input
@@ -95,6 +104,19 @@ export default function StudentRegister() {
           </div>
           <div className="row p-sm-2 px-3">
             <p className="col-sm-6 my-1 text-sm-start text-center">
+              MIDDLE NAME
+            </p>
+            <input
+              type="text"
+              className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
+              {...register("MIDDLENAME")}
+            />
+            <small className="text-sm-end text-center text-danger">
+              {errors.MIDDLENAME?.message}
+            </small>
+          </div>
+          <div className="row p-sm-2 px-3">
+            <p className="col-sm-6 my-1 text-sm-start text-center">
               GSFE ACCOUNT
             </p>
             <input
@@ -113,14 +135,45 @@ export default function StudentRegister() {
               {...register("COURSE")}
               id="inputGroupSelect2"
             >
-              <option value="">Choose....</option>
-              <option value="COET">COET</option>
-              <option value="ESET">ESET</option>
-              <option value="ETECH">ETECH</option>
-              <option value="MT">MT</option>
+              <option value="none" selected disabled hidden>
+                Choose...
+              </option>
+              <option value="BSCE">BSCE</option>
+              <option value="BSEE">BSEE</option>
+              <option value="BSME">BSME</option>
+              <option value="BSIE ICT">BSIE ICT</option>
+              <option value="BSIE IA">BSIE IA</option>
+              <option value="BSIE HE">BSIE HE</option>
+              <option value="BTTE CP">BTTE CP</option>
+              <option value="BTTE EL">BTTE EL</option>
+              <option value="BET AT">BET AT</option>
+              <option value="BET CT">BET CT</option>
+              <option value="BET COET">BET COET</option>
+              <option value="BET ET">BET ET</option>
+              <option value="BET ESET">BET ESET</option>
+              <option value="BET MT">BET MT</option>
+              <option value="BET PPT">BET PPT</option>
             </select>
             <small className="text-sm-end text-center text-danger">
               {errors.COURSE?.message}
+            </small>
+          </div>
+          <div className="row p-sm-2 px-3">
+            <p className="col-sm-6 my-1 text-sm-start text-center">SECTION</p>
+            <select
+              className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
+              {...register("SECTION")}
+              id="inputGroupSelect3"
+            >
+              <option value="none" selected disabled hidden>
+                Choose...
+              </option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+
+            </select>
+            <small className="text-sm-end text-center text-danger">
+              {errors.SECTION?.message}
             </small>
           </div>
           <div className="row p-sm-2 px-3">
@@ -130,7 +183,9 @@ export default function StudentRegister() {
               {...register("YEAR")}
               id="inputGroupSelect3"
             >
-              <option value="">Choose....</option>
+              <option value="none" selected disabled hidden>
+                Choose...
+              </option>
               <option value="1ST">1ST</option>
               <option value="2ND">2ND</option>
               <option value="3RD">3RD</option>
@@ -147,7 +202,9 @@ export default function StudentRegister() {
               {...register("STATUS")}
               id="inputGroupSelect1"
             >
-              <option value="">Choose....</option>
+              <option value="none" selected disabled hidden>
+                Choose...
+              </option>
               <option value="REGULAR">REGULAR</option>
               <option value="IRREGULAR">IRREGULAR</option>
             </select>
@@ -167,13 +224,12 @@ export default function StudentRegister() {
             </small>
           </div>
           <div className="text-center">
-              {errorMessage && (
+            {errorMessage && (
               <small className="text-danger">{errorMessage}</small>
             )}
           </div>
-        
+
           <div className="text-center py-2">
-           
             <button
               className="text-center px-3 py-1 btn btn-outline-dark"
               type="submit"

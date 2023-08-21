@@ -13,6 +13,17 @@ export const metadata = {
 }
 
 export default function RootLayout({ children }) {
+  useEffect(() => {
+    const handleRouteChange = (url) => {
+      console.log('loading');
+    };
+
+    window.addEventListener('routeChangeStart', handleRouteChange); 
+
+    return () => {
+      window.removeEventListener('routeChangeStart', handleRouteChange);
+    };
+  }, []);
   useEffect(() =>{
     import("bootstrap/dist/js/bootstrap"); 
   }, []);

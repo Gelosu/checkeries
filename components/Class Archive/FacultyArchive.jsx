@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +19,9 @@ export default function FacultyArchive() {
 
   const fetchAndSetClasses = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/classes/${tupcids}`);
+      const response = await axios.get(
+        `http://localhost:3001/classes/${tupcids}`
+      );
       if (response.status === 200) {
         setClasses(response.data);
       } else {
@@ -36,10 +36,13 @@ export default function FacultyArchive() {
     await fetchAndSetClasses();
   };
 
-
   //class adding
   const addClass = async () => {
-    if (inputValue.trim() !== "" && cName.trim() !== "" && sName.trim() !== "") {
+    if (
+      inputValue.trim() !== "" &&
+      cName.trim() !== "" &&
+      sName.trim() !== ""
+    ) {
       console.log("inputValue:", inputValue);
       console.log("classname:", cName);
       console.log("subjectname:", sName);
@@ -48,14 +51,17 @@ export default function FacultyArchive() {
         class_code: inputValue,
         class_name: cName,
         subject_name: sName,
-        TUPCID: tupcids
+        TUPCID: tupcids,
       };
       setInputValue("");
       setcName("");
       setsName("");
       console.log("Sending data:", newClass); // Log the data being sent
       try {
-        const response = await axios.post("http://localhost:3001/addclass", newClass);
+        const response = await axios.post(
+          "http://localhost:3001/addclass",
+          newClass
+        );
         if (response.status === 201) {
           fetchClasses();
           setInputValue("");
@@ -63,8 +69,6 @@ export default function FacultyArchive() {
           setsName("");
         } else {
           console.error("Error adding class");
-          
-        
         }
       } catch (error) {
         console.error("Error adding class:", error);
@@ -72,10 +76,12 @@ export default function FacultyArchive() {
     }
   };
 
-   // deleteclass
-   const deleteClass = async (class_name) => {
+  // deleteclass
+  const deleteClass = async (class_name) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/deleteclass/${class_name}`);
+      const response = await axios.delete(
+        `http://localhost:3001/deleteclass/${class_name}`
+      );
       if (response.status === 200) {
         console.log("Class deleted successfully");
         fetchClasses(); // Fetch updated class list
@@ -163,8 +169,11 @@ export default function FacultyArchive() {
         {/* End MODAL */}
         {/* Start */}
         <div className="d-flex flex-wrap flex-start pt-2 ">
-        {classes.map((data, index) => (
-  <section key={index} className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark">
+          {classes.map((data, index) => (
+            <section
+              key={index}
+              className="col-lg-3 col-md-5 col-12 border border-dark rounded mb-3 me-3 p-5 text-decoration-none link-dark"
+            >
               <div className="text-end">
                 <Image
                   src="/three-dots.svg"
@@ -183,19 +192,25 @@ export default function FacultyArchive() {
                     <a
                       className="dropdown-item"
                       onClick={() => deleteClass(data.class_name)}
-                      
                     >
                       Remove Class
                     </a>
                   </li>
                 </ul>
               </div>
-              <Link key={index} href={{pathname:"/Classroom/F/Test", query:{classname: data.class_name,
-      subjectname: data.subject_name,
-      classcode: data.class_code,}}} className="link-dark text-decoration-none">
-                <p  className="text-center">
-                {data.class_name}
-                </p>
+              <Link
+                key={index}
+                href={{
+                  pathname: "/Classroom/F/Test",
+                  query: {
+                    classname: data.class_name,
+                    subjectname: data.subject_name,
+                    classcode: data.class_code,
+                  },
+                }}
+                className="link-dark text-decoration-none"
+              >
+                <p className="text-center">{data.class_name}</p>
               </Link>
             </section>
           ))}

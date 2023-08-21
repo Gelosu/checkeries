@@ -45,7 +45,7 @@ const AdminLogin = () => {
         <form className="d-flex justify-content-center align-items-center flex-column col-12" onSubmit={handleAdminLogin}>
           <p className="mb-0 mb-3">ADMIN NAME</p>
           <input type="text" className="py-1 px-3 w-75 rounded border border-dark mb-3 text-center" name="ADMINNAME" />
-          <input type='text' className='py-1 px-3 w-75 rounded border border-dark mb-4 text-center' name='PASSWORD'/>
+          <input type='password' className='py-1 px-3 w-75 rounded border border-dark mb-4 text-center' name='PASSWORD'/>
           {error && <small className="mb-2 text-danger">{error}</small>} {/* Display error message */}
           <button type="submit" className="px-3 mb-3 btn btn-outline-dark">
             LOGIN

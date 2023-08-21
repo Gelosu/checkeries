@@ -14,7 +14,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false); // State variable for password visibility
 
   const handleAdminLinkClick = () => {
-    router.push('/adminlogin'); // Redirect to the admin login page
+    router.push('/adminlogin');
   };
 
   const schema = yup.object().shape({
@@ -82,7 +82,7 @@ export default function Login() {
           <p className="mb-0">PASSWORD</p>
           <div className="input-group mb-1 w-75">
             <input
-              type={showPassword ? 'text' : 'password'} // Use 'text' when showPassword is true, otherwise use 'password'
+              type={showPassword ? 'text' : 'password'}
               className="py-1 px-3 rounded border border-dark text-center form-control"
               {...register('PASSWORD')}
             />

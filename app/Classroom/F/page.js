@@ -1,3 +1,4 @@
+"use client"
 import FacultyArchive from "@/components/Class Archive/FacultyArchive";
 import FacultyAside from "@/components/DefaultFix/FacultyAside";
 

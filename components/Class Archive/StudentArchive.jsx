@@ -1,12 +1,9 @@
-"use client";
-
 import { useState , useEffect} from "react";
 import Image from "next/image";
 import axios from "axios"
 import { useTupcid } from "@/app/provider";
 
 export default function StudentArchive() {
-  const [classData, setClassData] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [message, setMessage] = useState("");
   const [userClasses, setUserClasses] = useState([]);
@@ -41,7 +38,17 @@ export default function StudentArchive() {
 
 
   const addClass = async () => {
+
     if (inputValue.trim() !== "") {
+      // Check if the class code is already added
+    const isClassAdded = userClasses.some(
+      (classData) => classData.class_code === inputValue
+    );
+
+    if (isClassAdded) {
+      alert("Class is already added.");
+      return;
+    }
       try {
         const response = await axios.get(
           `http://localhost:3001/checkclass/${inputValue}`

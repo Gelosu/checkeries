@@ -1,3 +1,4 @@
+"use client"
 import StudentArchive from "@/components/Class Archive/StudentArchive";
 import StudentAside from "@/components/DefaultFix/StudentAside";
 
