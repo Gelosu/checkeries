@@ -12,6 +12,7 @@ export default function MatchCode() {
   const searchParams = useSearchParams();
   const TUPCID = searchParams.get("TUPCID");
   const accountType = searchParams.get('accountType');
+  const [modalshow, setModalShow] = useState("");
  
   
 
@@ -23,7 +24,6 @@ export default function MatchCode() {
     try {
       // Make the GET request to fetch the TUPCID and accountType based on the code
       const { data } = await axios.get(`http://localhost:3001/getTUPCID?code=${code}`);
-  
       // Check if both TUPCID and accountType are present in the response data
       if (data.TUPCID && data.accountType) {
         // Success, TUPCID found, save TUPCID and accountType, then redirect to reset password page
@@ -40,7 +40,7 @@ export default function MatchCode() {
     } catch (error) {
       // Error making the GET request
       console.error("Error occurred while making the GET request:", error);
-      setError("Failed to communicate with the server");
+      setError("The code didn't match!");
 
     } finally {
       setIsSubmitting(false);
@@ -57,7 +57,7 @@ export default function MatchCode() {
         <form onSubmit={handleFormSubmit} className="text-center d-flex flex-column">
           <input
             type="text"
-            className="py-1 px-3 rounded border border-dark mb-3 text-center"
+            className="py-1 px-3 rounded border border-dark mb-2 text-center"
             placeholder="6-Digit Code"
             value={code}
             onChange={(e) => setCode(e.target.value)}

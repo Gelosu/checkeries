@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useEffect } from 'react';
 import Provider from './provider';
 
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
@@ -13,17 +14,6 @@ export const metadata = {
 }
 
 export default function RootLayout({ children }) {
-  useEffect(() => {
-    const handleRouteChange = (url) => {
-      console.log('loading');
-    };
-
-    window.addEventListener('routeChangeStart', handleRouteChange); 
-
-    return () => {
-      window.removeEventListener('routeChangeStart', handleRouteChange);
-    };
-  }, []);
   useEffect(() =>{
     import("bootstrap/dist/js/bootstrap"); 
   }, []);
@@ -31,7 +21,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <Provider>
-          {children}
+            {children}
         </Provider>
         </body>
     </html>

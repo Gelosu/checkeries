@@ -103,6 +103,7 @@ app.post('/studreg', (req, res) => {
                 console.error('Error executing the INSERT query:', err);
                 return res.status(500).send({ message: 'Database error' });
               }
+              console.log("yes");
               return res.status(200).send({ message: 'Student registered successfully' });
             }
           );
@@ -163,6 +164,7 @@ app.post('/facultyreg', (req, res) => {
       return res.status(500).send({ message: 'Database error' });
     });
 });
+
 
 // DELETE STUDENT DATA
 app.delete('/students/:TUPCID', (req, res) => {

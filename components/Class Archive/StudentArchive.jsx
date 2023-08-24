@@ -38,17 +38,7 @@ export default function StudentArchive() {
 
 
   const addClass = async () => {
-
     if (inputValue.trim() !== "") {
-      // Check if the class code is already added
-    const isClassAdded = userClasses.some(
-      (classData) => classData.class_code === inputValue
-    );
-
-    if (isClassAdded) {
-      alert("Class is already added.");
-      return;
-    }
       try {
         const response = await axios.get(
           `http://localhost:3001/checkclass/${inputValue}`

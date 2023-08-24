@@ -30,7 +30,7 @@ export default function FacultyRegister() {
     try {
       setErrorMessage("");
       console.log(data);
-     
+      router.push("/login")
       const response = await axios.post(
         "http://localhost:3001/facultyreg",
         data
@@ -41,7 +41,6 @@ export default function FacultyRegister() {
       if (response.status === 200) {
         // Student registration successful, redirect or show success message
         console.log("faculty registered successfully!");
-        router.push("/login")
         // Redirect or show a success message to the user
         
       } else {

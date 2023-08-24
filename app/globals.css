@@ -56,6 +56,12 @@ a{
   top: 50%;
   transform: translateY(-50%);
 }
+#ShowHide1{
+  position: absolute;
+  right: 0;
+  top: 0  ;
+  transform: translateY(50%);
+}
 #ShowHide2{
   position: absolute;
   right: .7rem;

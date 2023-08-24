@@ -29,26 +29,20 @@ export default function StudentRegister() {
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
-  const submitForm = async (data) => {
+  const onSubmit = async (data) => {
     try {
       setErrorMessage("");
-      console.log(data);
-      router.push("/login")
-      const response = await axios.post(
-        "http://localhost:3001/studreg",
-        data
-      );
+      const response = await axios.post("http://localhost:3001/studreg", data);
+      console.log(response.status)
       console.log(response.data);
-      // Redirect or perform any other actions after successful registration
-      
       if (response.status === 200) {
         // Student registration successful, redirect or show success message
-        console.log("student registered successfully!");
+        console.log("Student registered successfully!");
         // Redirect or show a success message to the user
-        
+        router.push("/login");
       } else {
         // Something went wrong with the registration
-        console.log("An error occurred while Faculty.");
+        console.log("An error occurred while registering student.");
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
@@ -56,17 +50,16 @@ export default function StudentRegister() {
         setErrorMessage("TUPCID ALREADY REGISTERED");
       } else {
         console.log(error);
-        console.log("An error occurred while registering student");
+        console.log("An error occurred while registering student.");
       }
     }
   };
-  
 
   return (
     <main className="container-sm custom-h2 py-sm-5 py-3 d-flex justify-content-center align-items-center flex-column">
       <p className="mb-0 fw-bold fs-5 ">STUDENT REGISTRATION</p>
       <section className="container-sm col-lg-6 py-3 px-4 border border-dark rounded">
-        <form onSubmit={handleSubmit(submitForm)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="row p-sm-2 px-3">
             <p className="col-sm-6 my-1 text-sm-start text-center">TUPC ID</p>
             <input
@@ -133,9 +126,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center "
               {...register("COURSE")}
-              id="inputGroupSelect2"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="BSCE">BSCE</option>
@@ -163,9 +155,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("SECTION")}
-              id="inputGroupSelect3"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="A">A</option>
@@ -181,9 +172,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("YEAR")}
-              id="inputGroupSelect3"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="1ST">1ST</option>
@@ -200,9 +190,8 @@ export default function StudentRegister() {
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
               {...register("STATUS")}
-              id="inputGroupSelect1"
             >
-              <option value="none" selected disabled hidden>
+              <option value="" selected disabled hidden>
                 Choose...
               </option>
               <option value="REGULAR">REGULAR</option>
