@@ -1,28 +1,35 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const passport = require('passport');
-const expressSession = require('express-session');
-const cookieParser = require('cookie-parser');
-const connection = require('./db');
-const bcryptjs = require('bcryptjs');
-const nodemailer = require('nodemailer'); // Import nodemailer for sending emails
-
-
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const passport = require("passport");
+const expressSession = require("express-session");
+const cookieParser = require("cookie-parser");
+const connection = require("./db");
+const bcryptjs = require("bcryptjs");
+const nodemailer = require("nodemailer"); // Import nodemailer for sending emails
+const uuid = require('uuid');
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(expressSession({ secret: 'mySecretKey', resave: false, saveUninitialized: false }));
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-}));
-app.use(cookieParser('mySecretKey'));
+app.use(
+  expressSession({
+    secret: "mySecretKey",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
+app.use(cookieParser("mySecretKey"));
 app.use(passport.initialize());
 app.use(passport.session());
-require('./passportConfig')(passport);
+require("./passportConfig")(passport);
 
 // Check if the TUPCID already exists in the database for both students and faculty
 const checkTUPCIDExists = async (TUPCID, table) => {
@@ -35,6 +42,21 @@ const checkTUPCIDExists = async (TUPCID, table) => {
   }
 };
 
+const checkingClass = async (class_code, class_name, subject_name) => {
+  try {
+    const query =
+      "SELECT COUNT(*) as count FROM class_table where class_code = ? or subject_name = ? or class_name = ?";
+    const [all] = await connection.query(query, [
+      class_code,
+      subject_name,
+      class_name,
+    ]);
+    const count = all[0].count
+    return count;
+  } catch (error) {
+    throw error;
+  }
+};
 
 //check login
 
@@ -61,9 +83,8 @@ const checkLogin = async (table, TUPCID, PASSWORD, accountType) => {
   }
 };
 
-
 // FOR STUDENT REGISTRATION
-app.post('/studreg', (req, res) => {
+app.post("/studreg", (req, res) => {
   const {
     TUPCID,
     SURNAME,
@@ -78,48 +99,66 @@ app.post('/studreg', (req, res) => {
   } = req.body;
 
   // Check if the TUPCID already exists in the student_accounts table
-  checkTUPCIDExists(TUPCID, 'student_accounts')
+  checkTUPCIDExists(TUPCID, "student_accounts")
     .then((exists) => {
       if (exists) {
-        return res.status(409).send({ message: 'TUPCID already exists. Student registration failed.' });
+        return res
+          .status(409)
+          .send({
+            message: "TUPCID already exists. Student registration failed.",
+          });
       }
 
       // TUPCID does not exist, proceed with student registration
-      if (STATUS === 'REGULAR' || STATUS === 'IRREGULAR') {
+      if (STATUS === "REGULAR" || STATUS === "IRREGULAR") {
         // Hash the password before storing it in the database
         bcryptjs.hash(PASSWORD, 10, (err, hashedPassword) => {
           if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send({ message: 'Server error' });
+            console.error("Error hashing password:", err);
+            return res.status(500).send({ message: "Server error" });
           }
 
           const query = `INSERT INTO student_accounts (TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, COURSE,SECTION , YEAR, STATUS, PASSWORD) 
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
           connection.query(
             query,
-            [TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, COURSE, SECTION, YEAR, STATUS, hashedPassword], 
+            [
+              TUPCID,
+              SURNAME,
+              FIRSTNAME,
+              MIDDLENAME,
+              GSFEACC,
+              COURSE,
+              SECTION,
+              YEAR,
+              STATUS,
+              hashedPassword,
+            ],
             (err, result) => {
               if (err) {
-                console.error('Error executing the INSERT query:', err);
-                return res.status(500).send({ message: 'Database error' });
-              }
+                console.error("Error executing the INSERT query:", err);
+                return res.status(500).send({ message: "Database error" });
+              }else{
               console.log("yes");
-              return res.status(200).send({ message: 'Student registered successfully' });
+              return res
+                .status(200)
+                .send({ message: "Student registered successfully" });
+              }
             }
           );
         });
       } else {
-        return res.status(400).send({ message: 'Invalid STATUS value' });
+        return res.status(400).send({ message: "Invalid STATUS value" });
       }
     })
     .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error checking TUPCID in the database:", err);
+      return res.status(500).send({ message: "Database error" });
     });
 });
 
 // FOR PROFESSOR REGISTRATION
-app.post('/facultyreg', (req, res) => {
+app.post("/facultyreg", (req, res) => {
   const {
     TUPCID,
     SURNAME,
@@ -131,141 +170,155 @@ app.post('/facultyreg', (req, res) => {
   } = req.body;
 
   // Check if the TUPCID already exists in the faculty_accounts table
-  checkTUPCIDExists(TUPCID, 'faculty_accounts')
+  checkTUPCIDExists(TUPCID, "faculty_accounts")
     .then((exists) => {
       if (exists) {
-        return res.status(409).send({ message: 'TUPCID already exists. Faculty registration failed.' });
+        return res
+          .status(409)
+          .send({
+            message: "TUPCID already exists. Faculty registration failed.",
+          });
       }
 
       // TUPCID does not exist, proceed with faculty registration
       bcryptjs.hash(PASSWORD, 10, (err, hashedPassword) => {
         if (err) {
-          console.error('Error hashing password:', err);
-          return res.status(500).send({ message: 'Server error' });
+          console.error("Error hashing password:", err);
+          return res.status(500).send({ message: "Server error" });
         }
 
         const query = `INSERT INTO faculty_accounts (TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, SUBJECTDEPT, PASSWORD) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)`;
         connection.query(
           query,
-          [TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, SUBJECTDEPT, hashedPassword],
+          [
+            TUPCID,
+            SURNAME,
+            FIRSTNAME,
+            MIDDLENAME,
+            GSFEACC,
+            SUBJECTDEPT,
+            hashedPassword,
+          ],
           (err, result) => {
             if (err) {
-              console.error('Error executing the INSERT query:', err);
-              return res.status(500).send({ message: 'Database error' });
+              console.error("Error executing the INSERT query:", err);
+              return res.status(500).send({ message: "Database error" });
             }
-            return res.status(200).send({ message: 'Faculty registered successfully' });
+            return res
+              .status(200)
+              .send({ message: "Faculty registered successfully" });
           }
         );
       });
     })
     .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error checking TUPCID in the database:", err);
+      return res.status(500).send({ message: "Database error" });
     });
 });
 
-
 // DELETE STUDENT DATA
-app.delete('/students/:TUPCID', (req, res) => {
+app.delete("/students/:TUPCID", (req, res) => {
   const { TUPCID } = req.params;
-  const query = 'DELETE FROM student_accounts WHERE TUPCID = ?';
+  const query = "DELETE FROM student_accounts WHERE TUPCID = ?";
   connection.query(query, [TUPCID], (err, result) => {
     if (err) {
-      console.error('Error deleting student data:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error deleting student data:", err);
+      return res.status(500).send({ message: "Database error" });
     } else if (result.affectedRows === 0) {
-      return res.status(404).send({ message: 'Student not found' });
+      return res.status(404).send({ message: "Student not found" });
     }
-    return res.status(200).send({ message: 'Student deleted successfully' });
+    return res.status(200).send({ message: "Student deleted successfully" });
   });
 });
 
 // DELETE FACULTY DATA
-app.delete('/faculty/:TUPCID', (req, res) => {
+app.delete("/faculty/:TUPCID", (req, res) => {
   const { TUPCID } = req.params;
-  const query = 'DELETE FROM faculty_accounts WHERE TUPCID = ?';
+  const query = "DELETE FROM faculty_accounts WHERE TUPCID = ?";
   connection.query(query, [TUPCID], (err, result) => {
     if (err) {
-      console.error('Error deleting faculty data:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error deleting faculty data:", err);
+      return res.status(500).send({ message: "Database error" });
     } else if (result.affectedRows === 0) {
-      return res.status(404).send({ message: 'Faculty not found' });
+      return res.status(404).send({ message: "Faculty not found" });
     }
-    return res.status(200).send({ message: 'Faculty deleted successfully' });
+    return res.status(200).send({ message: "Faculty deleted successfully" });
   });
 });
 
 // DELETE ADMIN ACCOUNT
-app.delete('/admin/:TUPCID', (req, res) => {
+app.delete("/admin/:TUPCID", (req, res) => {
   const TUPCID = req.params.TUPCID;
-  const query = 'DELETE FROM admin_accounts WHERE TUPCID = ?';
+  const query = "DELETE FROM admin_accounts WHERE TUPCID = ?";
   connection.query(query, [TUPCID], (err, result) => {
     if (err) {
-      console.error('Error deleting admin data:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error deleting admin data:", err);
+      return res.status(500).send({ message: "Database error" });
     } else if (result.affectedRows === 0) {
-      return res.status(404).send({ message: 'Admin not found' });
+      return res.status(404).send({ message: "Admin not found" });
     }
-    return res.status(200).send({ message: 'Admin deleted successfully' });
+    return res.status(200).send({ message: "Admin deleted successfully" });
   });
 });
 
-
 // GET STUDENT DATA
-app.get('/students', (req, res) => {
-  const query = 'SELECT TUPCID, SURNAME, FIRSTNAME, GSFEACC, COURSE, YEAR, STATUS, PASSWORD FROM student_accounts';
+app.get("/students", (req, res) => {
+  const query =
+    "SELECT TUPCID, SURNAME, FIRSTNAME, GSFEACC, COURSE, YEAR, STATUS, PASSWORD FROM student_accounts";
   connection.query(query, (err, result) => {
     if (err) {
-      console.error('Error fetching student data:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error fetching student data:", err);
+      return res.status(500).send({ message: "Database error" });
     }
     return res.status(200).send(result);
   });
 });
 
 // GET FACULTY DATA
-app.get('/faculty', (req, res) => {
-  const query = 'SELECT TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, SUBJECTDEPT, PASSWORD FROM faculty_accounts';
+app.get("/faculty", (req, res) => {
+  const query =
+    "SELECT TUPCID, SURNAME, FIRSTNAME, MIDDLENAME, GSFEACC, SUBJECTDEPT, PASSWORD FROM faculty_accounts";
   connection.query(query, (err, result) => {
     if (err) {
-      console.error('Error fetching faculty data:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error fetching faculty data:", err);
+      return res.status(500).send({ message: "Database error" });
     }
     return res.status(200).send(result);
   });
 });
 
 // GET ADMIN ACCOUNTS
-app.get('/admin', (req, res) => {
-  const query = 'SELECT TUPCID, ADMINNAME, EMAIL, PASSWORD FROM admin_accounts';
+app.get("/admin", (req, res) => {
+  const query = "SELECT TUPCID, ADMINNAME, EMAIL, PASSWORD FROM admin_accounts";
   connection.query(query, (err, result) => {
     if (err) {
-      console.error('Error fetching admin accounts:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error fetching admin accounts:", err);
+      return res.status(500).send({ message: "Database error" });
     }
     return res.status(200).send(result);
   });
 });
 
 // UPDATE STUDENT DATA
-app.put('/student/:TUPCID', (req, res) => {
+app.put("/student/:TUPCID", (req, res) => {
   const TUPCID = req.params.TUPCID;
   const updatedData = req.body;
 
   // Check if the TUPCID exists in the student_accounts table
-  checkTUPCIDExists(TUPCID, 'student_accounts')
+  checkTUPCIDExists(TUPCID, "student_accounts")
     .then((exists) => {
       if (!exists) {
-        return res.status(404).send({ message: 'Student not found' });
+        return res.status(404).send({ message: "Student not found" });
       }
 
       // Hash the password before updating (if provided)
       if (updatedData.PASSWORD) {
         bcryptjs.hash(updatedData.PASSWORD, 10, (err, hashedPassword) => {
           if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send({ message: 'Server error' });
+            console.error("Error hashing password:", err);
+            return res.status(500).send({ message: "Server error" });
           }
 
           // Remove the password from updatedData since we don't want to update it separately
@@ -273,7 +326,7 @@ app.put('/student/:TUPCID', (req, res) => {
 
           const fieldsToUpdate = Object.keys(dataToUpdate)
             .map((key) => `${key} = ?`)
-            .join(', ');
+            .join(", ");
 
           const query = `UPDATE student_accounts
                          SET ${fieldsToUpdate}, PASSWORD = ?
@@ -284,19 +337,21 @@ app.put('/student/:TUPCID', (req, res) => {
             [...Object.values(dataToUpdate), hashedPassword, TUPCID],
             (err, result) => {
               if (err) {
-                console.error('Error updating student data:', err);
-                return res.status(500).send({ message: 'Database error' });
+                console.error("Error updating student data:", err);
+                return res.status(500).send({ message: "Database error" });
               }
-              return res.status(200).send({ message: 'Student updated successfully' });
+              return res
+                .status(200)
+                .send({ message: "Student updated successfully" });
             }
           );
         });
       } else {
         // If the PASSWORD field is not being updated, send the data to the server without hashing
         const fieldsToUpdate = Object.keys(updatedData)
-          .filter((key) => key !== 'TUPCID') // Exclude TUPCID from the fields to update
+          .filter((key) => key !== "TUPCID") // Exclude TUPCID from the fields to update
           .map((key) => `${key} = ?`)
-          .join(', ');
+          .join(", ");
 
         const query = `UPDATE student_accounts
                        SET ${fieldsToUpdate}
@@ -304,43 +359,48 @@ app.put('/student/:TUPCID', (req, res) => {
 
         connection.query(
           query,
-          [...Object.values(updatedData).filter((val) => val !== updatedData.PASSWORD), TUPCID],
+          [
+            ...Object.values(updatedData).filter(
+              (val) => val !== updatedData.PASSWORD
+            ),
+            TUPCID,
+          ],
           (err, result) => {
             if (err) {
-              console.error('Error updating student data:', err);
-              return res.status(500).send({ message: 'Database error' });
+              console.error("Error updating student data:", err);
+              return res.status(500).send({ message: "Database error" });
             }
-            return res.status(200).send({ message: 'Student updated successfully' });
+            return res
+              .status(200)
+              .send({ message: "Student updated successfully" });
           }
         );
       }
     })
     .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error checking TUPCID in the database:", err);
+      return res.status(500).send({ message: "Database error" });
     });
 });
 
-
-
 // UPDATE FACULTY DATA
-app.put('/faculty/:TUPCID', (req, res) => {
+app.put("/faculty/:TUPCID", (req, res) => {
   const TUPCID = req.params.TUPCID;
   const updatedData = req.body;
 
   // Check if the TUPCID exists in the faculty_accounts table
-  checkTUPCIDExists(TUPCID, 'faculty_accounts')
+  checkTUPCIDExists(TUPCID, "faculty_accounts")
     .then((exists) => {
       if (!exists) {
-        return res.status(404).send({ message: 'Faculty not found' });
+        return res.status(404).send({ message: "Faculty not found" });
       }
 
       // Hash the password before updating (if provided)
       if (updatedData.PASSWORD) {
         bcryptjs.hash(updatedData.PASSWORD, 10, (err, hashedPassword) => {
           if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send({ message: 'Server error' });
+            console.error("Error hashing password:", err);
+            return res.status(500).send({ message: "Server error" });
           }
 
           // Remove the password from updatedData since we don't want to update it separately
@@ -348,7 +408,7 @@ app.put('/faculty/:TUPCID', (req, res) => {
 
           const fieldsToUpdate = Object.keys(dataToUpdate)
             .map((key) => `${key} = ?`)
-            .join(', ');
+            .join(", ");
 
           const query = `UPDATE faculty_accounts
                          SET ${fieldsToUpdate}, PASSWORD = ?
@@ -359,19 +419,21 @@ app.put('/faculty/:TUPCID', (req, res) => {
             [...Object.values(dataToUpdate), hashedPassword, TUPCID],
             (err, result) => {
               if (err) {
-                console.error('Error updating faculty data:', err);
-                return res.status(500).send({ message: 'Database error' });
+                console.error("Error updating faculty data:", err);
+                return res.status(500).send({ message: "Database error" });
               }
-              return res.status(200).send({ message: 'Faculty updated successfully' });
+              return res
+                .status(200)
+                .send({ message: "Faculty updated successfully" });
             }
           );
         });
       } else {
         // If the PASSWORD field is not being updated, send the data to the server without hashing
         const fieldsToUpdate = Object.keys(updatedData)
-          .filter((key) => key !== 'TUPCID') // Exclude TUPCID from the fields to update
+          .filter((key) => key !== "TUPCID") // Exclude TUPCID from the fields to update
           .map((key) => `${key} = ?`)
-          .join(', ');
+          .join(", ");
 
         const query = `UPDATE faculty_accounts
                        SET ${fieldsToUpdate}
@@ -379,42 +441,48 @@ app.put('/faculty/:TUPCID', (req, res) => {
 
         connection.query(
           query,
-          [...Object.values(updatedData).filter((val) => val !== updatedData.PASSWORD), TUPCID],
+          [
+            ...Object.values(updatedData).filter(
+              (val) => val !== updatedData.PASSWORD
+            ),
+            TUPCID,
+          ],
           (err, result) => {
             if (err) {
-              console.error('Error updating faculty data:', err);
-              return res.status(500).send({ message: 'Database error' });
+              console.error("Error updating faculty data:", err);
+              return res.status(500).send({ message: "Database error" });
             }
-            return res.status(200).send({ message: 'Faculty updated successfully' });
+            return res
+              .status(200)
+              .send({ message: "Faculty updated successfully" });
           }
         );
       }
     })
     .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error checking TUPCID in the database:", err);
+      return res.status(500).send({ message: "Database error" });
     });
 });
 
-
 // UPDATE ADMIN DATA
-app.put('/admin/:TUPCID', (req, res) => {
+app.put("/admin/:TUPCID", (req, res) => {
   const TUPCID = req.params.TUPCID;
   const updatedData = req.body;
 
   // Check if the TUPCID exists in the admin_accounts table
-  checkTUPCIDExists(TUPCID, 'admin_accounts')
+  checkTUPCIDExists(TUPCID, "admin_accounts")
     .then((exists) => {
       if (!exists) {
-        return res.status(404).send({ message: 'Faculty not found' });
+        return res.status(404).send({ message: "Faculty not found" });
       }
 
       // Hash the password before updating (if provided)
       if (updatedData.PASSWORD) {
         bcryptjs.hash(updatedData.PASSWORD, 10, (err, hashedPassword) => {
           if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send({ message: 'Server error' });
+            console.error("Error hashing password:", err);
+            return res.status(500).send({ message: "Server error" });
           }
 
           // Remove the password from updatedData since we don't want to update it separately
@@ -422,7 +490,7 @@ app.put('/admin/:TUPCID', (req, res) => {
 
           const fieldsToUpdate = Object.keys(dataToUpdate)
             .map((key) => `${key} = ?`)
-            .join(', ');
+            .join(", ");
 
           const query = `UPDATE admin_accounts
                          SET ${fieldsToUpdate}, PASSWORD = ?
@@ -433,19 +501,21 @@ app.put('/admin/:TUPCID', (req, res) => {
             [...Object.values(dataToUpdate), hashedPassword, TUPCID],
             (err, result) => {
               if (err) {
-                console.error('Error updating admin data:', err);
-                return res.status(500).send({ message: 'Database error' });
+                console.error("Error updating admin data:", err);
+                return res.status(500).send({ message: "Database error" });
               }
-              return res.status(200).send({ message: 'admin updated successfully' });
+              return res
+                .status(200)
+                .send({ message: "admin updated successfully" });
             }
           );
         });
       } else {
         // If the PASSWORD field is not being updated, send the data to the server without hashing
         const fieldsToUpdate = Object.keys(updatedData)
-          .filter((key) => key !== 'TUPCID') // Exclude TUPCID from the fields to update
+          .filter((key) => key !== "TUPCID") // Exclude TUPCID from the fields to update
           .map((key) => `${key} = ?`)
-          .join(', ');
+          .join(", ");
 
         const query = `UPDATE admin_accounts
                        SET ${fieldsToUpdate}
@@ -453,52 +523,72 @@ app.put('/admin/:TUPCID', (req, res) => {
 
         connection.query(
           query,
-          [...Object.values(updatedData).filter((val) => val !== updatedData.PASSWORD), TUPCID],
+          [
+            ...Object.values(updatedData).filter(
+              (val) => val !== updatedData.PASSWORD
+            ),
+            TUPCID,
+          ],
           (err, result) => {
             if (err) {
-              console.error('Error updating admin data:', err);
-              return res.status(500).send({ message: 'Database error' });
+              console.error("Error updating admin data:", err);
+              return res.status(500).send({ message: "Database error" });
             }
-            return res.status(200).send({ message: 'admin updated successfully' });
+            return res
+              .status(200)
+              .send({ message: "admin updated successfully" });
           }
         );
       }
     })
     .catch((err) => {
-      console.error('Error checking TUPCID in the database:', err);
-      return res.status(500).send({ message: 'Database error' });
+      console.error("Error checking TUPCID in the database:", err);
+      return res.status(500).send({ message: "Database error" });
     });
 });
 
-
 // Handle the login request
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
   const { TUPCID, PASSWORD } = req.body;
 
   try {
-    const studentLoginResult = await checkLogin('student', TUPCID, PASSWORD, 'student');
-    const facultyLoginResult = await checkLogin('faculty', TUPCID, PASSWORD, 'faculty');
+    const studentLoginResult = await checkLogin(
+      "student",
+      TUPCID,
+      PASSWORD,
+      "student"
+    );
+    const facultyLoginResult = await checkLogin(
+      "faculty",
+      TUPCID,
+      PASSWORD,
+      "faculty"
+    );
 
-    if (studentLoginResult.accountType === 'student') {
-      res.json({ accountType: 'student' });
-    } else if (facultyLoginResult.accountType === 'faculty') {
-      res.json({ accountType: 'faculty' });
+    if (studentLoginResult.accountType === "student") {
+      res.json({ accountType: "student" });
+    } else if (facultyLoginResult.accountType === "faculty") {
+      res.json({ accountType: "faculty" });
     } else {
-      res.status(404).json({ message: 'Account does not exist' });
+      res.status(404).json({ message: "Account does not exist" });
     }
   } catch (error) {
-    console.error('Error during login:', error);
-    res.status(500).json({ message: 'An error occurred. Please try again later.' });
+    console.error("Error during login:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred. Please try again later." });
   }
 });
 
-
-app.post('/adminlogin', async (req, res) => {
+app.post("/adminlogin", async (req, res) => {
   const { adminName, passWord } = req.body;
 
   try {
     const connect = await connection.getConnection();
-    const [adminLogin] = await connect.execute('SELECT * FROM admin_accounts WHERE ADMINNAME = ?', [adminName]);
+    const [adminLogin] = await connect.execute(
+      "SELECT * FROM admin_accounts WHERE ADMINNAME = ?",
+      [adminName]
+    );
     connect.release();
 
     if (adminLogin.length === 0) {
@@ -507,77 +597,75 @@ app.post('/adminlogin', async (req, res) => {
 
     const storedHashedPassword = adminLogin[0].PASSWORD; // Fetch hashed password from database
 
-    const passwordMatch = await bcryptjs.compare(passWord, storedHashedPassword);
+    const passwordMatch = await bcryptjs.compare(
+      passWord,
+      storedHashedPassword
+    );
 
     if (passwordMatch) {
-      return res.status(200).send({ isAuthenticated: true, adminName: adminLogin[0].ADMINNAME });
+      return res
+        .status(200)
+        .send({ isAuthenticated: true, adminName: adminLogin[0].ADMINNAME });
     } else {
       return res.status(401).send({ isAuthenticated: false });
     }
   } catch (err) {
-    console.error('Error fetching admin account:', err);
-    return res.status(500).send({ message: 'Database error' });
+    console.error("Error fetching admin account:", err);
+    return res.status(500).send({ message: "Database error" });
   }
 });
 
-
-
-
-
 //passwordreset
-
-
 
 /// Function to send the email to GSFE Account
 const sendEmailToGSFEAccount = async (GSFEACC, code) => {
   // Replace these placeholders with your actual email service credentials and settings
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
-      user: 'eos2022to2023@gmail.com',
-      pass: 'ujfshqykrtepqlau',
+      user: "eos2022to2023@gmail.com",
+      pass: "ujfshqykrtepqlau",
     },
   });
 
   const mailOptions = {
-    from: 'eos2022to2023@gmail.com',
+    from: "eos2022to2023@gmail.com",
     to: GSFEACC,
-    subject: 'Forgot Password Code',
+    subject: "Forgot Password Code",
     text: `Good day! In order to update your password in the current account, please use the following 6-digit code: ${code}`,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('Email sent to GSFE Account:', GSFEACC);
+    console.log("Email sent to GSFE Account:", GSFEACC);
   } catch (err) {
-    console.error('Error sending email to GSFE Account:', err);
+    console.error("Error sending email to GSFE Account:", err);
     throw err;
   }
 };
 
-
-
-
-app.post('/forgotpassword', async (req, res) => {
+app.post("/forgotpassword", async (req, res) => {
   const { TUPCID, GSFEACC } = req.body;
 
   // Helper function to find the account type based on the TUPCID
   const findAccountType = async (TUPCID) => {
     try {
-      const studentQuery = 'SELECT TUPCID FROM student_accounts WHERE TUPCID = ?';
-      const facultyQuery = 'SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?';
-      const adminQuery = 'SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?';
+      const studentQuery =
+        "SELECT TUPCID FROM student_accounts WHERE TUPCID = ?";
+      const facultyQuery =
+        "SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?";
+      const adminQuery = "SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?";
 
       const [studentRows] = await connection.query(studentQuery, [TUPCID]);
       const [facultyRows] = await connection.query(facultyQuery, [TUPCID]);
       const [adminRows] = await connection.query(adminQuery, [TUPCID]);
 
       if (studentRows.length > 0) {
-        return 'student';
+        return "student";
       } else if (facultyRows.length > 0) {
-        return 'faculty';
+        return "faculty";
       } else if (adminRows.length > 0) {
-        return 'admin';
+        return "admin";
       } else {
         return null; // Account type not found
       }
@@ -586,53 +674,58 @@ app.post('/forgotpassword', async (req, res) => {
     }
   };
 
-  const generateAndSendCode = async (TUPCID, GSFEACC, accountType) => { // Add 'accountType' as a parameter
+  const generateAndSendCode = async (TUPCID, GSFEACC, accountType) => {
+    // Add 'accountType' as a parameter
     try {
       // Generate a random 6-digit number between 100000 and 999999 (inclusive)
       const min = 100000;
       const max = 999999;
       const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
-  
+
       // Convert the random number to a 6-digit string by padding with leading zeros
-      const code = randomNumber.toString().padStart(6, '0');
-  
+      const code = randomNumber.toString().padStart(6, "0");
+
       // Store the code and accountType in the database along with TUPCID and GSFEACC
-      const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)'; // Include 'accountType' in the query
+      const query =
+        "INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)"; // Include 'accountType' in the query
       await connection.query(query, [TUPCID, GSFEACC, code, accountType]); // Pass 'accountType' as a parameter
-  
+
       // Send the code and account type to the registered GSFE account via email
       sendEmailToGSFEAccount(GSFEACC, code);
-  
+
       // Send the response back to the client along with the account type
-      return res.status(200).send({ message: 'Code sent to GSFE Account'});
+      return res.status(200).send({ message: "Code sent to GSFE Account" });
     } catch (err) {
-      console.error('Error generating and sending code:', err);
-      return res.status(500).send({ message: 'Failed to generate and send code' });
+      console.error("Error generating and sending code:", err);
+      return res
+        .status(500)
+        .send({ message: "Failed to generate and send code" });
     }
   };
- 
-  
-  
+
   try {
     // Check if TUPCID and GSFEACC are provided and not empty
     if (!TUPCID || !GSFEACC) {
-      return res.status(400).send({ message: 'TUPCID and GSFEACC are required fields' });
+      return res
+        .status(400)
+        .send({ message: "TUPCID and GSFEACC are required fields" });
     }
 
     // Check if the TUPCID exists in any account type table (student_accounts or faculty_accounts)
     const accountType = await findAccountType(TUPCID);
     if (!accountType) {
-      return res.status(404).send({ message: 'TUPCID does not exist' });
+      return res.status(404).send({ message: "TUPCID does not exist" });
     }
 
     // Generate a random 6-digit number between 100000 and 999999 (inclusive)
     const min = 100000;
     const max = 999999;
     const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
-    const code = randomNumber.toString().padStart(6, '0');
+    const code = randomNumber.toString().padStart(6, "0");
 
     // Store the code and accountType in the database along with TUPCID and GSFEACC
-    const query = 'INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)';
+    const query =
+      "INSERT INTO passwordreset_accounts (TUPCID, GSFEACC, code, accountType) VALUES (?, ?, ?, ?)";
     await connection.query(query, [TUPCID, GSFEACC, code, accountType]);
 
     // Send the code to the GSFE account via email
@@ -640,91 +733,91 @@ app.post('/forgotpassword', async (req, res) => {
 
     // Send the response back to the client along with the account type
     return res.status(200).send({
-      message: 'A 6-digit code has been sent to the provided GSFE Account email address.',
+      message:
+        "A 6-digit code has been sent to the provided GSFE Account email address.",
       accountType,
     });
   } catch (err) {
-    console.error('Error handling forgot password request:', err);
-    return res.status(500).send({ message: 'Failed to process the request' });
+    console.error("Error handling forgot password request:", err);
+    return res.status(500).send({ message: "Failed to process the request" });
   }
 });
 
 //match coding...
 // POST request to check if the inputted code matches the code received on the user's email
 // Check if the inputted code matches the code received on the user's email
-app.post('/matchcode', async (req, res) => {
+app.post("/matchcode", async (req, res) => {
   const { TUPCID, code } = req.body;
 
   try {
     // Check if the TUPCID exists in the passwordreset_accounts table
-    const query = 'SELECT * FROM passwordreset_accounts WHERE TUPCID = ?';
+    const query = "SELECT * FROM passwordreset_accounts WHERE TUPCID = ?";
     const [rows] = await connection.query(query, [TUPCID]);
 
     // Check if there is a record for the provided TUPCID
     if (rows.length === 0) {
-      return res.status(404).send({ message: 'TUPCID not found' });
+      return res.status(404).send({ message: "TUPCID not found" });
     }
 
     // Check if the inputted code matches the code stored in the database
     if (rows[0].code !== code) {
-      return res.status(400).send({ message: 'Invalid code' });
+      return res.status(400).send({ message: "Invalid code" });
     }
 
     // If the code matches, remove the code from the database
-    const deleteQuery = 'DELETE FROM passwordreset_accounts WHERE TUPCID = ?';
+    const deleteQuery = "DELETE FROM passwordreset_accounts WHERE TUPCID = ?";
     await connection.query(deleteQuery, [TUPCID]);
 
     // If the code matches and is removed, send a success response
-    return res.status(200).send({ message: 'Code matches' });
+    return res.status(200).send({ message: "Code matches" });
   } catch (err) {
-    console.error('Error checking code in the database:', err);
-    return res.status(500).send({ message: 'Database error' });
+    console.error("Error checking code in the database:", err);
+    return res.status(500).send({ message: "Database error" });
   }
 });
 
 //getTUPCID IN FORGETPASSS..
 
-app.get('/getTUPCID', async (req, res) => {
+app.get("/getTUPCID", async (req, res) => {
   const { code } = req.query;
 
   try {
-    const query = 'SELECT TUPCID, accountType FROM passwordreset_accounts WHERE code = ?';
+    const query =
+      "SELECT TUPCID, accountType FROM passwordreset_accounts WHERE code = ?";
     const [rows] = await connection.query(query, [code]);
 
     if (rows.length > 0) {
       const { TUPCID, accountType } = rows[0];
       return res.status(200).send({ TUPCID, accountType });
     } else {
-      return res.status(404).send({ message: 'Code not found' });
+      return res.status(404).send({ message: "Code not found" });
     }
   } catch (error) {
-    console.error('Error fetching TUPCID:', error);
-    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+    console.error("Error fetching TUPCID:", error);
+    return res.status(500).send({ message: "Failed to fetch TUPCID" });
   }
 });
 
-
-
 //get account type
 // Endpoint for fetching the account type based on TUPCID
-app.get('/getaccounttype', async (req, res) => {
+app.get("/getaccounttype", async (req, res) => {
   const { TUPCID } = req.query;
 
   try {
     const accountType = await findAccountType(TUPCID);
     if (!accountType) {
-      return res.status(404).send({ message: 'Account type not found for the provided TUPCID' });
+      return res
+        .status(404)
+        .send({ message: "Account type not found for the provided TUPCID" });
     }
     return res.status(200).send({ accountType });
   } catch (err) {
-    console.error('Error fetching account type:', err);
-    return res.status(500).send({ message: 'Failed to fetch account type' });
+    console.error("Error fetching account type:", err);
+    return res.status(500).send({ message: "Failed to fetch account type" });
   }
 });
 
-
 //update pass in forgot pass
-
 
 // Helper function to update password for students and faculty
 const updatePassword = async (table, TUPCID, PASSWORD) => {
@@ -741,28 +834,27 @@ const updatePassword = async (table, TUPCID, PASSWORD) => {
   }
 };
 
-
-app.put('/updatepassword/:TUPCID', async (req, res) => {
+app.put("/updatepassword/:TUPCID", async (req, res) => {
   const TUPCIDFromParams = req.params.TUPCID; // Get the TUPCID from the request params
   const { PASSWORD } = req.body;
 
   try {
     // Check if the TUPCID exists in either student_accounts or faculty_accounts table
     const accountType = await findAccountType(TUPCIDFromParams);
-    if (accountType === 'student') {
-      await updatePassword('student', TUPCIDFromParams, PASSWORD);
-    } else if (accountType === 'faculty') {
-      await updatePassword('faculty', TUPCIDFromParams, PASSWORD);
-    } else if (accountType === 'admin') {
-      await updatePassword('admin', TUPCIDFromParams, PASSWORD);
+    if (accountType === "student") {
+      await updatePassword("student", TUPCIDFromParams, PASSWORD);
+    } else if (accountType === "faculty") {
+      await updatePassword("faculty", TUPCIDFromParams, PASSWORD);
+    } else if (accountType === "admin") {
+      await updatePassword("admin", TUPCIDFromParams, PASSWORD);
     } else {
-      return res.status(404).send({ message: 'TUPCID not found' });
+      return res.status(404).send({ message: "TUPCID not found" });
     }
 
-    return res.status(200).send({ message: 'Password updated successfully' });
+    return res.status(200).send({ message: "Password updated successfully" });
   } catch (err) {
-    console.error('Error updating password:', err);
-    return res.status(500).send({ message: 'Failed to update password' });
+    console.error("Error updating password:", err);
+    return res.status(500).send({ message: "Failed to update password" });
   }
 });
 
@@ -770,21 +862,30 @@ app.put('/updatepassword/:TUPCID', async (req, res) => {
 const findAccountType = async (TUPCID) => {
   try {
     // Query the student_accounts table
-    const [studentRows] = await connection.query("SELECT TUPCID FROM student_accounts WHERE TUPCID = ?", [TUPCID]);
+    const [studentRows] = await connection.query(
+      "SELECT TUPCID FROM student_accounts WHERE TUPCID = ?",
+      [TUPCID]
+    );
 
     if (studentRows.length > 0) {
       return "student";
     }
 
     // Query the faculty_accounts table
-    const [facultyRows] = await connection.query("SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?", [TUPCID]);
+    const [facultyRows] = await connection.query(
+      "SELECT TUPCID FROM faculty_accounts WHERE TUPCID = ?",
+      [TUPCID]
+    );
 
     if (facultyRows.length > 0) {
       return "faculty";
     }
 
     // Query the faculty_accounts table
-    const [adminRows] = await connection.query("SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?", [TUPCID]);
+    const [adminRows] = await connection.query(
+      "SELECT TUPCID FROM admin_accounts WHERE TUPCID = ?",
+      [TUPCID]
+    );
 
     if (adminRows.length > 0) {
       return "admin";
@@ -797,115 +898,214 @@ const findAccountType = async (TUPCID) => {
   }
 };
 
-
 //getting account type
-app.get('/getAccountType/:TUPCID', async (req, res) => {
+app.get("/getAccountType/:TUPCID", async (req, res) => {
   const { TUPCID } = req.params;
   try {
     const accountType = await findAccountType(TUPCID); // Implement the findAccountType function
     return res.status(200).send({ accountType });
   } catch (err) {
-    console.error('Error finding account type:', err);
-    return res.status(500).send({ message: 'Failed to fetch account type' });
+    console.error("Error finding account type:", err);
+    return res.status(500).send({ message: "Failed to fetch account type" });
   }
 });
 
 //student info
-app.get('/studinfo/:TUPCID', async (req, res) => {
+app.get("/studinfo/:TUPCID", async (req, res) => {
   const { TUPCID } = req.params;
 
   try {
-    const query ='SELECT FIRSTNAME, SURNAME, COURSE, YEAR FROM student_accounts WHERE TUPCID = ?';
+    const query =
+      "SELECT FIRSTNAME, SURNAME, COURSE, YEAR FROM student_accounts WHERE TUPCID = ?";
     const [all] = await connection.query(query, [TUPCID]);
 
-    if (all.length > 0) {  
+    if (all.length > 0) {
       const { FIRSTNAME, SURNAME, COURSE, YEAR } = all[0];
-      console.log(FIRSTNAME, SURNAME, COURSE, YEAR)
-      return res.status(202).send({FIRSTNAME, SURNAME, COURSE, YEAR});
+      console.log(FIRSTNAME, SURNAME, COURSE, YEAR);
+      return res.status(202).send({ FIRSTNAME, SURNAME, COURSE, YEAR });
     } else {
-      return res.status(404).send({ message: 'Code not found' });
+      return res.status(404).send({ message: "Code not found" });
     }
   } catch (error) {
-    console.error('Error fetching TUPCID:', error);
-    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+    console.error("Error fetching TUPCID:", error);
+    return res.status(500).send({ message: "Failed to fetch TUPCID" });
   }
 });
 //update personal info student
-app.get('/studinfos/:TUPCID', async(req, res) => {
-  const {TUPCID} = req.params;
-  try{
+app.get("/studinfos/:TUPCID", async (req, res) => {
+  const { TUPCID } = req.params;
+  try {
     const query = "SELECT * from student_accounts WHERE TUPCID = ?";
-    const [getall] = await connection.query(query, [TUPCID])
-    if (getall.length > 0){
-      const {FIRSTNAME, SURNAME, MIDDLENAME, COURSE, SECTION, YEAR, STATUS, GSFEACC, PASSWORD} = getall[0];
-      return res.status(202).send({FIRSTNAME, SURNAME, MIDDLENAME, COURSE, SECTION, YEAR, STATUS, GSFEACC, PASSWORD})
-    }else{
-      return res.status(404).send({ message: 'Student not found' });
+    const [getall] = await connection.query(query, [TUPCID]);
+    if (getall.length > 0) {
+      const {
+        FIRSTNAME,
+        SURNAME,
+        MIDDLENAME,
+        COURSE,
+        SECTION,
+        YEAR,
+        STATUS,
+        GSFEACC,
+        PASSWORD,
+      } = getall[0];
+      return res
+        .status(202)
+        .send({
+          FIRSTNAME,
+          SURNAME,
+          MIDDLENAME,
+          COURSE,
+          SECTION,
+          YEAR,
+          STATUS,
+          GSFEACC,
+          PASSWORD,
+        });
+    } else {
+      return res.status(404).send({ message: "Student not found" });
     }
-  } catch(error){
-    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+  } catch (error) {
+    return res.status(500).send({ message: "Failed to fetch TUPCID" });
   }
-})
+});
+
+app.put("/updatestudentinfos/:TUPCID", async (req, res) => {
+  const { TUPCID } = req.params;
+  const updatedData = req.body;
+  try {
+    const datas = Object.keys(updatedData)
+      .map((key) => `${key} = ?`)
+      .join(",");
+    const query = `UPDATE student_accounts SET ${datas} WHERE TUPCID = ?`;
+    connection.query(
+      query,
+      [...Object.values(updatedData), TUPCID],
+      (err, result) => {
+        if (err) {
+          console.error("Error updating student data:", err);
+          return res.status(500).send({ message: "Database error" });
+        }
+        return res
+          .status(200)
+          .send({ message: "Student updated successfully" });
+      }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+});
 //faculty info
-app.get('/facultyinfo/:TUPCID', async (req, res) => {
+app.get("/facultyinfo/:TUPCID", async (req, res) => {
   const { TUPCID } = req.params;
 
   try {
-    const query ='SELECT FIRSTNAME, SURNAME, SUBJECTDEPT FROM faculty_accounts WHERE TUPCID = ?';
+    const query =
+      "SELECT FIRSTNAME, SURNAME, SUBJECTDEPT FROM faculty_accounts WHERE TUPCID = ?";
     const [all] = await connection.query(query, [TUPCID]);
 
-    if (all.length > 0) {  
+    if (all.length > 0) {
       const { FIRSTNAME, SURNAME, SUBJECTDEPT } = all[0];
-      return res.status(202).send({FIRSTNAME, SURNAME, SUBJECTDEPT});
+      return res.status(202).send({ FIRSTNAME, SURNAME, SUBJECTDEPT });
     } else {
-      return res.status(404).send({ message: 'Code not found' });
+      return res.status(404).send({ message: "Code not found" });
     }
   } catch (error) {
-    console.error('Error fetching TUPCID:', error);
-    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
+    console.error("Error fetching TUPCID:", error);
+    return res.status(500).send({ message: "Failed to fetch TUPCID" });
   }
 });
 //update personal info faculty
-app.get('/facultyinfos/:TUPCID', async(req, res) => {
-  const {TUPCID} = req.params;
-  try{
+app.get("/facultyinfos/:TUPCID", async (req, res) => {
+  const { TUPCID } = req.params;
+  try {
     const query = "SELECT * from faculty_accounts WHERE TUPCID = ?";
-    const [getall] = await connection.query(query, [TUPCID])
-    if (getall.length > 0){
-      const {FIRSTNAME, SURNAME, MIDDLENAME, SUBJECTDEPT, GSFEACC, PASSWORD} = getall[0];
-      return res.status(202).send({FIRSTNAME, SURNAME, MIDDLENAME, SUBJECTDEPT, GSFEACC, PASSWORD})
-    }else{
-      return res.status(404).send({ message: 'Person not found' });
-    }
-  } catch(error){
-    return res.status(500).send({ message: 'Failed to fetch TUPCID' });
-  }
-})
-
-//faculty add and delete class
-
-// Endpoint to add a new class
-app.post("/addclass", (req, res) => {
-  const { TUPCID, class_code ,class_name, subject_name} = req.body;
-  
-  const query = `INSERT INTO class_table (TUPCID, class_code, class_name, subject_name, created_at) VALUES (?,?, ?, ?, NOW())`;
-  connection.query(query, [TUPCID,class_code, class_name, subject_name ], (error, results) => {
-    if (error) {
-      console.error("Error adding class: ", error);
-      res.status(500).send("Error adding class");
+    const [getall] = await connection.query(query, [TUPCID]);
+    if (getall.length > 0) {
+      const { FIRSTNAME, SURNAME, MIDDLENAME, SUBJECTDEPT, GSFEACC, PASSWORD } =
+        getall[0];
+      return res
+        .status(202)
+        .send({
+          FIRSTNAME,
+          SURNAME,
+          MIDDLENAME,
+          SUBJECTDEPT,
+          GSFEACC,
+          PASSWORD,
+        });
     } else {
-      console.log("Class added successfully");
-      res  .status(201).send("Class added successfully");
+      return res.status(404).send({ message: "Person not found" });
     }
-  });
+  } catch (error) {
+    return res.status(500).send({ message: "Failed to fetch TUPCID" });
+  }
 });
 
-// Endpoint to delete a class by classCode
-app.delete("/deleteclass/:class_name", (req, res) => {
-  const class_name = req.params.class_name;
+app.put("/updatefacultyinfos/:TUPCID", async (req, res) => {
+  const { TUPCID } = req.params;
+  const updatedData = req.body;
+  try {
+    const datas = Object.keys(updatedData)
+      .map((key) => `${key} = ?`)
+      .join(",");
+    const query = `UPDATE faculty_accounts SET ${datas} WHERE TUPCID = ?`;
+    connection.query(
+      query,
+      [...Object.values(updatedData), TUPCID],
+      (err, result) => {
+        if (err) {
+          console.error("Error updating student data:", err);
+          return res.status(500).send({ message: "Database error" });
+        }
+        return res
+          .status(200)
+          .send({ message: "Student updated successfully" });
+      }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+});
+//faculty add and delete class
+//FACULTY ARCHIVE
+// Endpoint to add a new class
+app.post("/addclass", (req, res) => {
+  const { TUPCID, class_code, class_name, subject_name } = req.body;
+  checkingClass(class_code, subject_name)
+  .then((count) => {
+    if (count >= 1) {
+      res.status(409).send({message: "Class Already Exists"})
+    } else{
+      const query = `INSERT INTO class_table (TUPCID, class_code, class_name, subject_name, created_at) VALUES (?,?, ?, ?, NOW())`;
+      connection.query(
+        query,
+        [TUPCID, class_code, class_name, subject_name],
+        (error, results) => {
+          if (error) {
+            console.error("Error adding class: ", error);
+            res.status(500).send("Error adding class");
+          } else {;
+            res.status(200).send("Class added successfully");
+          }
+        }
+      );
+      }
+  }).catch((error) => {
+    console.log(error)
+  })
+});
 
-  const query = 'DELETE FROM class_table WHERE class_name = ?';
-  connection.query(query, [class_name], (error, results) => {
+
+// Import necessary modules and setup your server
+//code validation for faculty
+
+// Endpoint to delete a class by classCode
+app.delete("/deleteclass/:tupcids/:class_name", (req, res) => {
+  const { tupcids, class_name } = req.params;
+
+  const query = "DELETE FROM class_table WHERE TUPCID = ? AND class_name = ?";
+  connection.query(query, [tupcids,class_name], (error, results) => {
     if (error) {
       console.error("Error deleting class: ", error);
       res.status(500).send("Error deleting class");
@@ -918,48 +1118,46 @@ app.delete("/deleteclass/:class_name", (req, res) => {
   });
 });
 
-
 // Endpoint to fetch all classes
 // GET endpoint to fetch classes based on TUPCID
-app.get('/classes/:tupcids', async (req, res) => {
+app.get("/classes/:tupcids", async (req, res) => {
   const { tupcids } = req.params;
   try {
-    const query = 'SELECT * FROM class_table WHERE TUPCID = ?';
+    const query = "SELECT * FROM class_table WHERE TUPCID = ?";
     const [rows] = await connection.query(query, [tupcids]);
 
     res.status(200).json(rows);
   } catch (error) {
-    console.error('Error fetching classes:', error);
-    res.status(500).json({ message: 'Failed to fetch classes' });
+    console.error("Error fetching classes:", error);
+    res.status(500).json({ message: "Failed to fetch classes" });
   }
 });
 
 //code validation for aclascode..
 
-
 //code validation for aclascode..GET1
-app.get('/checkclass/:classCode', async (req, res) => {
+app.get("/checkclass/:classCode", async (req, res) => {
   const { classCode } = req.params;
 
   try {
     console.log("classcode findings: ", classCode);
-    const query = "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
+    const query =
+      "SELECT COUNT(*) AS count FROM class_table WHERE class_code = ?";
     const [rows] = await connection.query(query, [classCode]);
 
     const count = rows[0].count;
-    console.log(count)
+    console.log(count);
     if (count == 1) {
       res.status(200).json({ exists: true });
       console.log(true);
     } else {
-      res.status(404).json({ exists: false, message: 'Code not found' });
+      res.status(404).json({ exists: false, message: "Code not found" });
     }
   } catch (error) {
-    console.error('Error fetching classCode:', error);
-    res.status(500).json({ message: 'Failed to fetch classCode' });
+    console.error("Error fetching classCode:", error);
+    res.status(500).json({ message: "Failed to fetch classCode" });
   }
 });
-
 
 //to get subject name
 // Endpoint to get subject name based on class code
@@ -972,10 +1170,12 @@ app.get("/getsubjectname/:classCode", async (req, res) => {
 
     if (rows.length === 1) {
       const subjectName = rows[0].subject_name;
-      console.log("subjectname:", subjectName)
+      console.log("subjectname:", subjectName);
       res.status(200).json({ subject_name: subjectName });
     } else {
-      res.status(404).json({ message: "Subject not found for the given class code" });
+      res
+        .status(404)
+        .json({ message: "Subject not found for the given class code" });
     }
   } catch (error) {
     console.error("Error fetching subject name:", error);
@@ -983,26 +1183,26 @@ app.get("/getsubjectname/:classCode", async (req, res) => {
   }
 });
 
-
-
 //post requesttt
 // Endpoint to add a new class
 app.post("/addclassstud", (req, res) => {
   const { TUPCID, class_code, subject_name } = req.body;
 
   const query = `INSERT INTO enrollments (TUPCID, class_code, subject_name, enrollment_date) VALUES (?, ?, ?, NOW())`;
-  connection.query(query, [TUPCID, class_code, subject_name], (error, results) => {
-    if (error) {
-      console.error("Error adding class: ", error);
-      res.status(500).send("Error adding class");
-    } else {
-      console.log("Class added successfully");
-      res.status(201).send("Class added successfully");
+  connection.query(
+    query,
+    [TUPCID, class_code, subject_name],
+    (error, results) => {
+      if (error) {
+        console.error("Error adding class: ", error);
+        res.status(500).send("Error adding class");
+      } else {
+        console.log("Class added successfully");
+        res.status(201).send("Class added successfully");
+      }
     }
-  });
+  );
 });
-
-
 
 app.get("/getclasses/:tupcid", async (req, res) => {
   const { tupcid } = req.params;
@@ -1018,28 +1218,28 @@ app.get("/getclasses/:tupcid", async (req, res) => {
   }
 });
 
+app.delete(
+  "/deletestudentenrollment/:TUPCID/:subjectName",
+  async (req, res) => {
+    const { TUPCID, subjectName } = req.params;
 
-app.delete('/deletestudentenrollment/:TUPCID/:subjectName', async (req, res) => {
-  const { TUPCID, subjectName } = req.params;
-
-  try {
-    const deleteQuery = `
+    try {
+      const deleteQuery = `
       DELETE FROM enrollments
       WHERE TUPCID = ? AND class_code IN (
         SELECT class_code FROM class_table WHERE subject_name = ?
       );
     `;
 
-    await connection.query(deleteQuery, [TUPCID, subjectName]);
-    
-    res.status(200).json({ message: 'Enrollment deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting student enrollment:', error);
-    res.status(500).json({ message: 'Failed to delete student enrollment' });
+      await connection.query(deleteQuery, [TUPCID, subjectName]);
+
+      res.status(200).json({ message: "Enrollment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting student enrollment:", error);
+      res.status(500).json({ message: "Failed to delete student enrollment" });
+    }
   }
-});
-
-
+);
 
 //VIEWING STUDENTS ENROLLED IN SUBJECT
 app.get("/getstudents/:classcode", async (req, res) => {
@@ -1047,7 +1247,7 @@ app.get("/getstudents/:classcode", async (req, res) => {
 
   try {
     const connect = await connection.getConnection();
-    
+
     const query = `
       SELECT e.TUPCID, s.FIRSTNAME, s.MIDDLENAME, s.SURNAME, s.STATUS,
              e.subject_name, e.enrollment_date
@@ -1055,18 +1255,148 @@ app.get("/getstudents/:classcode", async (req, res) => {
       INNER JOIN student_accounts s ON e.TUPCID = s.TUPCID
       WHERE e.class_code = ?;
     `;
-    
+
     const students = await connect.execute(query, [classcode]);
     connect.release();
-    
+
     return res.status(200).json({ students });
   } catch (err) {
-    console.error('Error fetching students:', err);
-    return res.status(500).json({ message: 'Database error' });
+    console.error("Error fetching students:", err);
+    return res.status(500).json({ message: "Database error" });
   }
 });
 
+//getting the TUPCID OF PROFESSOR BASED ON CLASSNAME AND SUBJECTNAME
+app.get("/getProfTUPCID/:subjectname/:classcode", async (req, res) => {
+  const { subjectname, classcode } = req.params;
+
+  try {
+    const query =
+      "SELECT TUPCID FROM class_table WHERE subject_name = ? and class_code = ?";
+    const [tupcid] = await connection.query(query, [subjectname, classcode]);
+
+    if (tupcid.length === 1) {
+      const TUPCID = tupcid[0].TUPCID;
+      res.status(200).json({ TUPCID });
+    } else {
+      res.status(404).json({ message: "WHat?" });
+    }
+  } catch (error) {
+    console.error("Error fetching subject name:", error);
+    res.status(500).json({ message: "Failed to fetch subject name" });
+  }
+});
+
+app.get("/getProfName/:TUPCID", async (req, res) => {
+  const { TUPCID } = req.params;
+  try {
+    const query =
+      "SELECT FIRSTNAME, MIDDLENAME, SURNAME FROM faculty_accounts where TUPCID = ?";
+    const [Name] = await connection.query(query, [TUPCID]);
+    if (Name.length >= 1) {
+      const { FIRSTNAME, MIDDLENAME, SURNAME } = Name[0];
+      res.status(200).json({ FIRSTNAME, MIDDLENAME, SURNAME });
+    } else {
+      console.log("Error?");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+
+// Function to generate a 5-character code from a UUID
+function generateCodeFromUUID() {
+  const uuidValue = uuid.v4(); // Generate a random UUID
+  const code = uuidValue.substring(0, 5); // Get the first 5 characters of the UUID
+  return code;
+}
+
+
+// Endpoint to add a new test
+app.post('/addtest', (req, res) => {
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
+
+  // Generate a unique code from the UUID
+  const testCode = generateCodeFromUUID();
+
+  const query = `INSERT INTO testpapers (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+
+  connection.query(
+    query,
+    [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number],
+    (error, results) => {
+      if (error) {
+        console.error('Error adding test:', error);
+        res.status(500).json({ success: false, message: 'Failed to add test' });
+      } else {
+        console.log('Test added successfully');
+        res.status(200).json({ success: true, message: 'Test added successfully', testCode });
+      }
+    }
+  );
+});
+
+//get the test 
+app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, res) => {
+  const { tupcid, classcode, classname, subjectname } = req.params;
+
+  try {
+    const query = "SELECT * FROM testpapers WHERE TUPCID = ? AND class_code = ? AND class_name = ? AND subject_name = ?";
+    const [rows] = await connection.query(query, [tupcid, classcode, classname, subjectname]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching test papers:", error);
+    res.status(500).json({ message: "Failed to fetch test papers" });
+  }
+});
+
+
+
+
+//delete the test...
+
+// Delete the test
+app.delete("/deletetest/:testCode", (req, res) => {
+  const { testCode } = req.params;
+
+  const query = "DELETE FROM testpapers WHERE uid = ?";
+  connection.query(query, [testCode], (error, results) => {
+    if (error) {
+      console.error("Error deleting test: ", error);
+      res.status(500).send("Error deleting test");
+    } else if (results.affectedRows === 0) {
+      res.status(404).send("Test not found");
+    } else {
+      console.log("Test deleted successfully");
+      res.status(200).send("Test deleted successfully");
+    }
+  });
+});
+
+// Update test
+app.put("/updatetest/:testCode", (req, res) => {
+  const { testCode } = req.params;
+  const { testName, testNumber } = req.body;
+
+  const updateQuery = `UPDATE testpapers SET test_name = ?, test_number = ? WHERE uid = ?`;
+
+  connection.query(updateQuery, [testName, testNumber, testCode], (error, results) => {
+    if (error) {
+      console.error("Error updating test:", error);
+      res.status(500).json({ success: false, error: "Error updating test" });
+    } else {
+      res.status(200).json({ success: true });
+    }
+  });
+});
+
+
+
+
+
 //for server
 app.listen(3001, () => {
-  console.log('Server started on port 3001');
+  console.log("Server started on port 3001");
 });

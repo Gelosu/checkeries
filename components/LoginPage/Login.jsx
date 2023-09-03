@@ -1,3 +1,4 @@
+"use client"
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -11,7 +12,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
   const tupcRegExp = /TUPC-\d{2}-\d{4}$/;
-  const [showPassword, setShowPassword] = useState(false); // State variable for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setIsloading] = useState(false)
 
   const handleAdminLinkClick = () => {
     router.push('/adminlogin');
@@ -30,6 +32,7 @@ export default function Login() {
 
   const submitForm = async (data) => {
     const { TUPCID, PASSWORD } = data;
+    setIsloading(true);
 
     try {
       const response = await axios.post('http://localhost:3001/login', {
@@ -61,6 +64,8 @@ export default function Login() {
       } else {
         setError('An error occurred. Please try again later.');
       }
+    }finally{
+      setIsloading(false)
     }
   };
 
@@ -97,9 +102,9 @@ export default function Login() {
             </a>
           </div>
           <small className="mb-2 text-danger">{errors.PASSWORD?.message}</small>
-          {error && <small className="mb-2 text-danger">{error}</small>} {/* Display error message */}
+          {error && <small className="mb-2 text-danger">{error}</small>}
           <button type="submit" className="px-3 mb-3 btn btn-outline-dark">
-            LOGIN
+            {loading ? "Loading..":"LOGIN"}
           </button>
         </form>
         <a

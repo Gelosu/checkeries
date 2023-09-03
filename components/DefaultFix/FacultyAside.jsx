@@ -10,6 +10,7 @@ export default function FacultyAside() {
   const [SURNAME, setSURNAME] = useState("");
   const [SUBJECTDEPT, setSUBJECTDEPT] = useState("");
   const [navs, setNavs] = useState(false);
+  
 
   useEffect(() => {
     const fetchData = async () => {

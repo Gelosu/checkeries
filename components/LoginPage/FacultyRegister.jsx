@@ -135,15 +135,17 @@ export default function FacultyRegister() {
             </p>
             <select
               className="col-sm-6 rounded py-1 px-3 border border-dark text-sm-start text-center"
-              id="inputGroupSelect4"
               name="SUBJECTDEPT"
               {...register("SUBJECTDEPT")}
             >
-              <option value="">Choose....</option>
-              <option value="DIT">DIT</option>
-              <option value="DIT?">DIT</option>
-              <option value="EHH??">EHH?</option>
-              <option value="EHH???">EHH???</option>
+                <option value="none" disabled hidden>
+                  Choose...
+                </option>
+                <option value="DIT">Department of Industrial Technology</option>
+                <option value="DED">Department of Industrial Education</option>
+                <option value="DES">Department of Engineering Sciences</option>
+                <option value="DLA">Department of Liberal Arts</option>
+                <option value="DMS">Department of Mathematics and Sciences</option>
             </select>
             <small className="text-sm-end text-center text-danger">
               {errors.SUBJECTDEPT?.message}

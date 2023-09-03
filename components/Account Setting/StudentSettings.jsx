@@ -1,10 +1,11 @@
 import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useTupcid } from "@/app/provider";
 
 export default function StudentSetting() {
+  const { tupcids } = useTupcid();
   const searchParams = useSearchParams();
   const TUPCID = searchParams.get("TUPCID");
   const [firstName, setFirstName] = useState("");
@@ -15,13 +16,15 @@ export default function StudentSetting() {
   const [year, setYear] = useState("");
   const [status, setStatus] = useState("");
   const [gsfeacc, setGsfeacc] = useState("");
-  const [password, setPassword] = useState("");
+  const [initialStudentInfo, setInitialInfo] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+
 
   useEffect(() => {
     const fetchstudentdate = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3001/studinfos/${TUPCID}`
+          `http://localhost:3001/studinfos/${TUPCID || tupcids}`
         );
         const {
           FIRSTNAME,
@@ -32,46 +35,113 @@ export default function StudentSetting() {
           YEAR,
           STATUS,
           GSFEACC,
-          PASSWORD,
+          
         } = response.data;
+
+        // Store initial faculty information
+        const initialStudentInfo = {
+          FIRSTNAME,
+          MIDDLENAME,
+          SURNAME,
+          COURSE,
+          SECTION,
+          YEAR,
+          STATUS,
+          GSFEACC,
+        };
+
+        // Set state with fetched data
         setFirstName(FIRSTNAME);
-        setSurName(SURNAME);
         setMiddleName(MIDDLENAME);
+        setSurName(SURNAME);
         setCourse(COURSE);
         setSection(SECTION);
         setYear(YEAR);
         setStatus(STATUS);
         setGsfeacc(GSFEACC);
-        setPassword(PASSWORD);
+       
+        setInitialInfo(initialStudentInfo);
       } catch(error){
         console.log(error)
       }
     };
     fetchstudentdate();
-  }, [TUPCID]);
+  }, [TUPCID, tupcids]);
 
-  const handleSubmit = () => {};
+  const handleSave = async () => {
+    try {
+      const updatedData = {
+        FIRSTNAME: firstName,
+        SURNAME: surName,
+        MIDDLENAME: MiddleName,
+        COURSE: course,
+        SECTION: section,
+        YEAR: year,
+        STATUS: status,
+        GSFEACC: gsfeacc,
+      };
+
+      await updateStudentDataOnServer(TUPCID, updatedData);
+       // Update initial faculty information
+       setInitialInfo(updatedData);
+       // Update shared state or context with the new information
+       updateStudentInfoContext(updatedData);
+       // Exit editing mode
+       setIsEditing(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const updateStudentDataOnServer = async (TUPCID, updatedData) => {
+    try {
+      await axios.put(
+        `http://localhost:3001/updatestudentinfos/${TUPCID}`,
+        updatedData
+      );
+    } catch (error) {
+      console.error("Error updating student data:", error);
+    }
+  };
+
   return (
     <main className="custom-m col-11 col-md-10 p-0">
       <section className="container-fluid p-sm-4 py-3 ">
         <div className="d-flex align-items-center">
-          <Link href="">
+          <Link href="http://localhost:3000/Classroom/S">
             <img src="/back-arrow.svg" height={30} width={40} />
           </Link>
           <h2 className="m-0">Settings</h2>
         </div>
         <h3 className="text-center pt-3 m-0 ">UPDATE PERSONAL INFO</h3>
         <div className="d-flex justify-content-center flex-column container col-md-10 col-lg-7 rounded border border-dark bg-lightgray">
-          <p className="text-end pt-2">EDIT</p>
+        <button
+              className="btn btn-secondary col-md-1 col-lg-1 border border-dark rounded"
+              onClick={() => {
+                if (isEditing) {
+                  setFirstName(initialStudentInfo.FIRSTNAME);
+                  setMiddleName(initialStudentInfo.MIDDLENAME);
+                  setSurName(initialStudentInfo.SURNAME);
+                  setCourse(initialStudentInfo.COURSE);
+                  setSection(initialStudentInfo.SECTION);
+                  setYear(initialStudentInfo.YEAR);
+                  setStatus(initialStudentInfo.STATUS);
+                  setGsfeacc(initialStudentInfo.GSFEACC);
+                }
+                setIsEditing((prevEditing) => !prevEditing);
+              }}
+            >
+              {isEditing ? "X" : "EDIT"}
+            </button>
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSave}
             className="row p-3 pt-0 col-sm-10 text-sm-start text-center align-self-center"
           >
             <div className="col-sm-6 p-2">
               <p className="p-0 m-0">TUPC ID</p>
               <input
                 type="text"
-                value={TUPCID}
+                value={TUPCID || tupcids}
                 className="col-12 rounded py-1 px-3 border border-dark bg-secondary"
                 readOnly
               />
@@ -82,6 +152,8 @@ export default function StudentSetting() {
                 type="text"
                 value={gsfeacc}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
+                onChange={(e) => setGsfeacc(e.target.value)}
               />
             </div>
             <div className="col-sm-6 p-2">
@@ -90,6 +162,8 @@ export default function StudentSetting() {
                 type="text"
                 value={firstName}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
+                onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
             <div className="col-sm-6 p-2">
@@ -97,9 +171,11 @@ export default function StudentSetting() {
               <select
                 type="text"
                 value={course}
+                onChange={(e) => setCourse(e.target.value)}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
               >
-                <option value="none" selected disabled hidden>
+                <option value="none" disabled hidden>
                   Choose...
                 </option>
                 <option value="BSCE">BSCE</option>
@@ -125,6 +201,8 @@ export default function StudentSetting() {
                 type="text"
                 value={MiddleName}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
+                onChange={(e) => setMiddleName(e.target.value)}
               />
             </div>
             <div className="col-sm-6 p-2">
@@ -133,8 +211,10 @@ export default function StudentSetting() {
                 type="text"
                 value={year}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                onChange={(e) => setYear(e.target.value)}
+                disabled={!isEditing}
               >
-                <option value="none" selected disabled hidden>
+                <option value="none" disabled hidden>
                   Choose...
                 </option>
                 <option value="1st">1st</option>
@@ -149,6 +229,8 @@ export default function StudentSetting() {
                 type="text"
                 value={surName}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
+                onChange={(e) => setSurName(e.target.value)}
               />
             </div>
             <div className="col-sm-6 p-2">
@@ -157,8 +239,10 @@ export default function StudentSetting() {
                 type="text"
                 value={section}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                onChange={(e) => setSection(e.target.value)}
+                disabled={!isEditing}
               >
-                <option value="none" selected disabled hidden>
+                <option value="none" disabled hidden>
                   Choose...
                 </option>
                 <option value="A">A</option>
@@ -171,6 +255,8 @@ export default function StudentSetting() {
                 type="text"
                 value={status}
                 className="col-12 rounded py-1 px-3 border border-dark"
+                disabled={!isEditing}
+                onChange={(e) => setStatus(e.target.value)}
               >
                 <option value="none" selected hidden disabled>
                   Choose...
@@ -180,21 +266,21 @@ export default function StudentSetting() {
               </select>
             </div>
             <div className="col-sm-6 p-2">
-              <p className="p-0 m-0">PASSWORD</p>
-              <input
-                type="text"
-                value={password}
-                className="col-12 rounded py-1 px-3 border border-dark"
-              />
+            <p className="col-sm-6 p-0 m-0 align-self-center">
+                PASSWORD: 
+                <Link href="/login/ForgetPassword">Update Password</Link>
+              </p>
             </div>
-            <div className="pt-3 text-center col-12">
-              <button
-                type="submit"
-                className="btn btn-light col-md-5 col-lg-2 border border-dark rounded text-center"
-              >
-                SAVE
-              </button>
-            </div>
+            {isEditing && (
+              <div className="pt-3 text-center col-12">
+                <button
+                  type="submit"
+                  className="btn btn-light col-md-5 col-lg-2 border border-dark rounded text-center"
+                >
+                  SAVE
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </section>

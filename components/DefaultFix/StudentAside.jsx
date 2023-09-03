@@ -5,7 +5,7 @@ import axios from "axios";
 import { useTupcid } from "@/app/provider";
 
 export default function StudentAside() {
-  const {tupcids} = useTupcid();
+  var {tupcids} = useTupcid();
   const [FIRSTNAME, setFIRSTNAME] = useState("");
   const [SURNAME, setSURNAME] = useState("");
   const [COURSE, setCOURSE] = useState("");

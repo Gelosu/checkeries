@@ -1,9 +1,11 @@
-"use client";
 import Footer from "@/components/DefaultFix/Footer";
 import NavBar from "@/components/DefaultFix/NavBar";
 import Login from "@/components/LoginPage/Login";
 
-export default function LoginPage() {
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export default async function LoginPage() {
+  await wait(1000)
   return (
     <main>
       <div>

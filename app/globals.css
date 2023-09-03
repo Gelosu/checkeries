@@ -46,6 +46,12 @@ a{
 .custom-round2{
   border-top-right-radius: 5px;
 }
+.custom-round3{
+  border-bottom-left-radius: 5px;
+}
+.custom-round4{
+  border-bottom-right-radius: 5px;
+}
 .custom-v,
 .custom-c{
   appearance: none;
@@ -136,4 +142,21 @@ a{
   .custom-h2{
     height: 140vh;
   }
+}
+.custom-dropdown-container{
+  position: relative;
+  height: max-content;
+}
+.custom-dropdown{
+  display: none;
+}
+.custom-dropdown:checked ~ .custom-dropdown-item{
+  position: relative;
+  top: 0px;
+
+}
+.custom-dropdown-item{
+  position: absolute;
+  top: -500px;
+
 }
