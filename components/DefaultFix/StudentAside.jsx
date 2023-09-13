@@ -76,7 +76,7 @@ export default function StudentAside() {
             >
               <p className="my-2">SETTINGS</p>
             </Link>
-            <Link href={{pathname:"/ReportProblem", query:{}}}
+            <Link href={{pathname:"/Classroom/S/ReportProblem", query:{}}}
             className="text-decoration-none link-light"
             >
               <p className="my-2">REPORT PROBLEM</p>

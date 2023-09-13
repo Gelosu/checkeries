@@ -6,11 +6,8 @@ import { useTupcid } from "@/app/provider";
 
 export default function FacultyAside() {
   var {tupcids} = useTupcid();
-  const [FIRSTNAME, setFIRSTNAME] = useState("");
-  const [SURNAME, setSURNAME] = useState("");
-  const [SUBJECTDEPT, setSUBJECTDEPT] = useState("");
+  const [facultyInfos, setFacultyInfos] = useState([])
   const [navs, setNavs] = useState(false);
-  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,11 +15,9 @@ export default function FacultyAside() {
           const response = await axios.get(
             `http://localhost:3001/facultyinfo/${tupcids}`
           );
-          const { FIRSTNAME, SURNAME, SUBJECTDEPT } = response.data;
-          setFIRSTNAME(FIRSTNAME);
-          setSURNAME(SURNAME);
-          setSUBJECTDEPT(SUBJECTDEPT);
-  
+          const { FIRSTNAME, SURNAME, SUBJECTDEPT, GSFEACC } = response.data;
+          setFacultyInfos({FirstName: FIRSTNAME, SurName:SURNAME,SubjDept:SUBJECTDEPT, GsfeAcc:GSFEACC})
+
         
           }
       catch (error) {
@@ -43,8 +38,8 @@ export default function FacultyAside() {
           <div className={navs ? "custom-hov2 flex-column text-center" : "custom-hov1 d-md-flex flex-column text-center"}>
             <div className="Circle2 align-self-center"></div>
             <p className="my-2">{tupcids}</p>
-            <p className="my-2">{SURNAME}, {FIRSTNAME}</p>
-            <small>{SUBJECTDEPT}</small>
+            <p className="my-2">{facultyInfos.SurName}, {facultyInfos.FirstName}</p>
+            <small>{facultyInfos.SubjDept}</small>
           </div>
           <input type="checkbox" className={navs ? "custom-c" : "custom-v"} onClick={animate}/>
           <div className={navs ? "custom-hov2 flex-column align-self-start px-2" : "custom-hov1 d-md-flex flex-column align-self-start px-2"}>
@@ -53,7 +48,7 @@ export default function FacultyAside() {
             >
               <p className="my-2">SETTINGS</p>
             </Link>
-            <Link href={{pathname:"/ReportProblem", query:{}}}
+            <Link href={{pathname:"/Classroom/F/ReportProblem", query:{gmail:facultyInfos.GsfeAcc}}}
             className="text-decoration-none link-light"
             >
               <p className="my-2">REPORT PROBLEM</p>

@@ -1,12 +1,12 @@
 import FacultyAside from "@/components/DefaultFix/FacultyAside";
-import PresetTest from "@/components/FacultyClass/PresetTest";
+import ReportProblem from "@/components/Report Problem/Report";
 
-export default function PresetTestPage() {
+export default function FacultyReportPage() {
   return (
     <main className="container-fluid">
       <section className="row">
         <FacultyAside />
-        <PresetTest />
+        <ReportProblem/>
       </section>
     </main>
   );

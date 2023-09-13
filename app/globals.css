@@ -145,18 +145,22 @@ a{
 }
 .custom-dropdown-container{
   position: relative;
-  height: max-content;
 }
 .custom-dropdown{
   display: none;
 }
 .custom-dropdown:checked ~ .custom-dropdown-item{
-  position: relative;
-  top: 0px;
-
+  display: block;
+  background-color: gray;
+  border: 1px solid black;
+  border-radius: 10px;
+  transition: 1s ease-in-out;
+  width: max-content;
 }
 .custom-dropdown-item{
   position: absolute;
-  top: -500px;
-
+  display: none;
+  right: 0;
+  top: 20px;
+  transition: 1s ease-in-out;
 }

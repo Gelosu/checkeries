@@ -6,7 +6,7 @@ const expressSession = require("express-session");
 const cookieParser = require("cookie-parser");
 const connection = require("./db");
 const bcryptjs = require("bcryptjs");
-const nodemailer = require("nodemailer"); // Import nodemailer for sending emails
+const nodemailer = require("nodemailer");
 const uuid = require('uuid');
 
 const app = express();
@@ -1314,28 +1314,40 @@ function generateCodeFromUUID() {
 
 
 // Endpoint to add a new test
-app.post('/addtest', (req, res) => {
-  const { TUPCID, class_name, subject_name, class_code, test_name, test_number } = req.body;
 
-  // Generate a unique code from the UUID
+// Adding a test and preset together
+app.post('/addtestandpreset', async (req, res) => {
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail } = req.body;
+
+  // Generate a unique code from the UUID for both test and preset
   const testCode = generateCodeFromUUID();
 
-  const query = `INSERT INTO testpapers (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
+  const testQuery = `
+    INSERT INTO testpapers 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
-  connection.query(
-    query,
-    [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number],
-    (error, results) => {
-      if (error) {
-        console.error('Error adding test:', error);
-        res.status(500).json({ success: false, message: 'Failed to add test' });
-      } else {
-        console.log('Test added successfully');
-        res.status(200).json({ success: true, message: 'Test added successfully', testCode });
-      }
-    }
-  );
+  const presetQuery = `
+    INSERT INTO presets 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+
+  try {
+    // Insert the test
+    await connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail]);
+
+    // Insert the preset
+    await connection.query(presetQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail]);
+
+    console.log('Test and preset added successfully');
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error adding test and preset:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
+
+
 
 //get the test 
 app.get("/gettestpaper/:tupcid/:classcode/:classname/:subjectname", async (req, res) => {
@@ -1391,6 +1403,263 @@ app.put("/updatetest/:testCode", (req, res) => {
     }
   });
 });
+
+
+//presets
+
+//get the test 
+app.get("/getpresets/:tupcid", async (req, res) => {
+  const { tupcid } = req.params;
+
+  try {
+    const query = "SELECT * FROM presets WHERE TUPCID = ? UNION SELECT * FROM testpapers WHERE TUPCID = ?";
+    const [rows] = await connection.query(query, [tupcid, tupcid]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching presets and test papers:", error);
+    res.status(500).json({ message: "Failed to fetch presets and test papers" });
+  }
+});
+
+
+
+
+//adding preset to current field..
+app.get('/getPresetInfo/:uid/:tupcid', async (req, res) => {
+  const { tupcid, uid } = req.params;
+
+  console.log("uid...", uid);
+  console.log("tupcid...", tupcid);
+
+  try {
+    // Construct the SQL query to retrieve information from both tables
+    const query = `
+      (SELECT TUPCID, uid, test_number, test_name, thumbnail FROM presets WHERE TUPCID = ? AND uid = ?)
+      UNION ALL
+      (SELECT TUPCID, uid, test_number, test_name, thumbnail FROM testpapers WHERE TUPCID = ? AND uid = ?)
+    `;
+
+    // Execute the query with the provided parameters
+    const [presetInfo] = await connection.query(query, [tupcid, uid, tupcid, uid]);
+
+    if (presetInfo.length >= 1) {
+      res.status(200).json(presetInfo);
+    } else {
+      // No data found
+      res.status(404).json({ error: 'No data found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving preset information:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+app.post('/addPresetToTest', async (req, res) => {
+  try {
+    const {
+      TUPCID,
+      class_name,
+      subject_name,
+      class_code,
+      test_name,
+      test_number,
+      thumbnail,
+    } = req.body;
+
+    // Generate a new UID for the testpaper (you can use your logic here)
+    const newUID = generateCodeFromUUID();
+    console.log("TUPCID....", TUPCID);
+    console.log("class_code...", class_code);
+
+    // Insert a new record into the testpapers table
+    const query = `
+      INSERT INTO testpapers 
+      (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      newUID,
+      TUPCID,
+      class_name,
+      subject_name,
+      class_code,
+      test_name,
+      test_number,
+      thumbnail,
+    ];
+
+    await connection.query(query, values);
+
+    // Respond with a success message
+    res.status(200).json({ message: 'Preset added to the test successfully' });
+  } catch (error) {
+    console.error('Error adding preset to the test:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
+//check account existence in faculty...
+// Check account existence in faculty...
+app.get('/checkTUPCIDinFaculty', async (req, res) => {
+  const { TUPCID } = req.query; // Use req.query to access query parameters
+
+  try {
+    // Check if TUPCID exists in faculty_accounts
+    console.log("TUPC ID...", TUPCID);
+    const exists = await checkTUPCIDExists(TUPCID, 'faculty_accounts');
+
+    if (exists) {
+      res.status(200).json({
+        exists: true,
+        message: 'TUPCID already exists in faculty_accounts.',
+      });
+    } else {
+      res.status(200).json({
+        exists: false,
+        message: 'TUPCID does not exist in faculty_accounts.',
+      });
+    }
+  } catch (error) {
+    console.error('Error checking TUPCID in faculty_accounts:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+//for sharing
+app.get('/getPresetInfo2/:uid', async (req, res) => {
+  const { uid } = req.params;
+
+  console.log("Received request for UID:", uid);
+
+  try {
+    // Construct the SQL query to retrieve information from both tables
+    const query = `
+      (SELECT uid, test_number, test_name, thumbnail FROM presets WHERE uid = ?)
+      UNION ALL
+      (SELECT uid, test_number, test_name, thumbnail FROM testpapers WHERE uid = ?)
+    `;
+
+    // Execute the query with the provided parameters
+    const [presetInfo2] = await connection.query(query, [uid, uid]);
+
+    if (presetInfo2.length >= 1) {
+      console.log("Found preset for UID:", uid);
+      res.status(200).json(presetInfo2[0]);
+    } else {
+      // Preset not found
+      console.log("Preset not found for UID:", uid);
+      res.status(404).json({ error: 'Preset not found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving preset information:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+//adding in test..
+app.post('/sendToRecipient', async (req, res) => {
+  try {
+    const { TUPCID, class_code, class_name, subject_name, presetInfo2 } = req.body;
+
+    // Generate a new UID for the testpaper (you can use your logic here)
+    const newUID = generateCodeFromUUID();
+    console.log("tupcid....", TUPCID)
+    console.log("classcode...", class_code)
+
+    // Insert a new record into the testpapers table
+    const query = `
+      INSERT INTO testpapers 
+      (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      newUID,
+      TUPCID,
+      class_name,
+      subject_name,
+      class_code,
+      presetInfo2.test_name,
+      presetInfo2.test_number,
+      presetInfo2.thumbnail,
+    ];
+
+    await connection.query(query, values);
+
+    // Respond with a success message or appropriate response
+    res.status(200).json({ message: 'Preset added to the test successfully' });
+  } catch (error) {
+    console.error('Error adding preset to the test:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+//add test ready to print
+app.post('/createtest', async (req, res) => {
+  try {
+    // Access data from the request body
+    const {
+      TUPCID,
+      test_number,
+      test_name,
+      class_name,
+      class_code,
+      subject_name,
+      uid,
+      data, // An array of objects representing questions
+    } = req.body;
+    console.log('Check receiving data....', TUPCID);
+
+    // Insert data into the database
+    const query = `
+      INSERT INTO testforstudents 
+      (TUPCID, test_number, test_name, class_name, class_code, subject_name, uid, questions, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      TUPCID,
+      test_number,
+      test_name,
+      class_name,
+      class_code,
+      subject_name,
+      uid,
+      JSON.stringify(data), // Convert the array of question objects to JSON string
+    ];
+
+    await connection.query(query, values);
+
+    // Respond with a success message
+    res.status(200).json({ message: 'Data added to the test successfully' });
+  } catch (error) {
+    console.error('Error adding data to the test:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -33,11 +33,11 @@ export default function AnswerSheet() {
               type="text"
               className="py-1 px-3 col-sm-8 rounded border border-dark text-sm-start text-center"
             >
-              <option selected>Choose...</option>
-              <option value="">IDENTIFICATION</option>
-              <option value="">MULTIPLE CHOICE</option>
-              <option value="">NUMERICAL</option>
-              <option value="">TRUE OR FALSE</option>
+              <option value=""selected disabled hidden>Choose...</option>
+              <option value="IDENTIFICATION">IDENTIFICATION</option>
+              <option value="MULTIPLE CHOICE">MULTIPLE CHOICE</option>
+              <option value="NUMERICAL">NUMERICAL</option>
+              <option value="TRUE OR FALSE">TRUE OR FALSE</option>
             </select>
           </form>
           <form className="row p-sm-2 px-3">
