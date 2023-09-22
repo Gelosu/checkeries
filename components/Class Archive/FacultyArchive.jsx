@@ -139,7 +139,7 @@ export default function FacultyArchive() {
 
 
   return (
-    <main className="custom-m col-11 col-md-10 p-0">
+    <main className="custom-m col-11 col-md-10 p-0 vh-100">
       <section className="container-fluid p-sm-4 py-3 ">
         <h3>FACULTY</h3>
         <button

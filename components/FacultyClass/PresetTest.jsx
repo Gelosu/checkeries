@@ -101,7 +101,7 @@ const handleAdd = async (testpaper) => {
 
     if (response.status === 200) {
       const presetInfo = response.data[0]; // Access the first element of the response array
-      console.log(" response check...", presetInfo.test_name);
+      console.log(" response check...", presetInfo.questions);
 
       // Send a POST request to add the preset to the testpapers table
       const addPresetResponse = await axios.post(
@@ -113,7 +113,7 @@ const handleAdd = async (testpaper) => {
           class_code: classcode,
           test_name: presetInfo.test_name,
           test_number: presetInfo.test_number,
-          thumbnail: presetInfo.thumbnail,
+          data: presetInfo.questions,
         }
       );
 
@@ -164,6 +164,7 @@ const handleShare = async () => {
       if (infoResponse.status === 200) {
         const presetInfo2Data = infoResponse.data;
         setPresetInfo2(presetInfo2Data);
+        console.log("data check:...", presetInfo2)
 
         // Send the data to the "sendToRecipient" endpoint
         const shareResponse = await axios.post(
@@ -173,7 +174,9 @@ const handleShare = async () => {
             class_name: 0,
             subject_name: 0,
             class_code: 0,
-            presetInfo2: presetInfo2Data,
+            test_name: presetInfo2Data.test_name,
+            test_number: presetInfo2Data.test_number,
+            questions: presetInfo2Data.questions
           }
         );
 
@@ -198,7 +201,7 @@ const handleShare = async () => {
 
 const handlePreview = (testpaper) => {
   // Set the image URL for the selected test paper
-  setPreviewImageUrl(testpaper.thumbnail); // Replace with the correct property for the image URL
+  setPreviewImageUrl(testpaper.questions); // Replace with the correct property for the image URL
 
   // Set the modal title dynamically
   setPreviewTitle(`Test Previewing - Test Number: ${testpaper.test_number}, Test Name: ${testpaper.test_name} in ${testpaper.class_name}`); // Customize the title format as needed
@@ -210,7 +213,7 @@ const handlePreview = (testpaper) => {
 
 
 return (
-  <main className="custom-m col-11 col-md-10 p-0">
+  <main className="col-11 col-md-10 p-0">
     <section className="container-fluid p-sm-4 py-3 ">
       <div className="d-flex align-items-center">
         <Link

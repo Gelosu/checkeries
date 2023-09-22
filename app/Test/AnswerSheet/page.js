@@ -6,7 +6,10 @@ export default function AnswerSheetPage() {
     <main className="container-fluid">
       <div className="row ">
         <FacultyAside />
-        <AnswerSheet />
+        <div className="custom-m col-11 col-md-10 p-0">
+          <AnswerSheet />
+        </div>
+        
       </div>
     </main>
   );

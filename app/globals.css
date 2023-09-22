@@ -72,8 +72,8 @@ a{
   position: absolute;
   right: .7rem;
   top: 8px;
-  
 }
+
 @media screen and (max-width:767px) {
   .custom-c,.custom-v{
     cursor: pointer;
@@ -85,8 +85,7 @@ a{
   }
   .custom-con2,
   .custom-con1{
-    transition: .3s ease-in-out;
-    
+    transition: .3s ease-in-out; 
   }
   .custom-con1{
     position: relative;

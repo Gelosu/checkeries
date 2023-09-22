@@ -1317,27 +1317,27 @@ function generateCodeFromUUID() {
 
 // Adding a test and preset together
 app.post('/addtestandpreset', async (req, res) => {
-  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail } = req.body;
+  const { TUPCID, class_name, subject_name, class_code, test_name, test_number, questions } = req.body;
 
   // Generate a unique code from the UUID for both test and preset
   const testCode = generateCodeFromUUID();
 
   const testQuery = `
     INSERT INTO testpapers 
-    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions, created_at) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
   const presetQuery = `
     INSERT INTO presets 
-    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions, created_at) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
   try {
     // Insert the test
-    await connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail]);
+    await connection.query(testQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions]);
 
     // Insert the preset
-    await connection.query(presetQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail]);
+    await connection.query(presetQuery, [testCode, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions]);
 
     console.log('Test and preset added successfully');
     return res.status(200).json({ success: true });
@@ -1435,9 +1435,9 @@ app.get('/getPresetInfo/:uid/:tupcid', async (req, res) => {
   try {
     // Construct the SQL query to retrieve information from both tables
     const query = `
-      (SELECT TUPCID, uid, test_number, test_name, thumbnail FROM presets WHERE TUPCID = ? AND uid = ?)
+      (SELECT TUPCID, uid, test_number, test_name, questions FROM presets WHERE TUPCID = ? AND uid = ?)
       UNION ALL
-      (SELECT TUPCID, uid, test_number, test_name, thumbnail FROM testpapers WHERE TUPCID = ? AND uid = ?)
+      (SELECT TUPCID, uid, test_number, test_name, questions FROM testpapers WHERE TUPCID = ? AND uid = ?)
     `;
 
     // Execute the query with the provided parameters
@@ -1466,7 +1466,7 @@ app.post('/addPresetToTest', async (req, res) => {
       class_code,
       test_name,
       test_number,
-      thumbnail,
+      data,
     } = req.body;
 
     // Generate a new UID for the testpaper (you can use your logic here)
@@ -1476,9 +1476,10 @@ app.post('/addPresetToTest', async (req, res) => {
 
     // Insert a new record into the testpapers table
     const query = `
-      INSERT INTO testpapers 
-      (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    INSERT INTO testpapers 
+    (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    
     `;
 
     const values = [
@@ -1489,7 +1490,7 @@ app.post('/addPresetToTest', async (req, res) => {
       class_code,
       test_name,
       test_number,
-      thumbnail,
+      JSON.stringify(data),
     ];
 
     await connection.query(query, values);
@@ -1541,9 +1542,9 @@ app.get('/getPresetInfo2/:uid', async (req, res) => {
   try {
     // Construct the SQL query to retrieve information from both tables
     const query = `
-      (SELECT uid, test_number, test_name, thumbnail FROM presets WHERE uid = ?)
+      (SELECT uid, test_number, test_name, questions FROM presets WHERE uid = ?)
       UNION ALL
-      (SELECT uid, test_number, test_name, thumbnail FROM testpapers WHERE uid = ?)
+      (SELECT uid, test_number, test_name, questions FROM testpapers WHERE uid = ?)
     `;
 
     // Execute the query with the provided parameters
@@ -1568,7 +1569,7 @@ app.get('/getPresetInfo2/:uid', async (req, res) => {
 //adding in test..
 app.post('/sendToRecipient', async (req, res) => {
   try {
-    const { TUPCID, class_code, class_name, subject_name, presetInfo2 } = req.body;
+    const { TUPCID, class_code, class_name, subject_name, test_name, test_number, questions} = req.body;
 
     // Generate a new UID for the testpaper (you can use your logic here)
     const newUID = generateCodeFromUUID();
@@ -1578,7 +1579,7 @@ app.post('/sendToRecipient', async (req, res) => {
     // Insert a new record into the testpapers table
     const query = `
       INSERT INTO testpapers 
-      (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, thumbnail, created_at) 
+      (uid, TUPCID, class_name, subject_name, class_code, test_name, test_number, questions, created_at) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
@@ -1588,9 +1589,9 @@ app.post('/sendToRecipient', async (req, res) => {
       class_name,
       subject_name,
       class_code,
-      presetInfo2.test_name,
-      presetInfo2.test_number,
-      presetInfo2.thumbnail,
+      test_name,
+      test_number,
+      JSON.stringify(questions),
     ];
 
     await connection.query(query, values);
@@ -1605,7 +1606,7 @@ app.post('/sendToRecipient', async (req, res) => {
 
 
 //add test ready to print
-app.post('/createtest', async (req, res) => {
+app.post('/createtestpaper', async (req, res) => {
   try {
     // Access data from the request body
     const {
@@ -1652,16 +1653,122 @@ app.post('/createtest', async (req, res) => {
 
 
 
+//get test data
+app.get('/gettestdata/:uid', async (req, res) => {
+  const { uid } = req.params;
+
+  console.log("Received request for UID:", uid);
+
+  try {
+    // Construct the SQL query to retrieve information from both tables
+    const query = `
+      SELECT TUPCID, test_number, test_name, class_name, class_code, subject_name, uid, questions from testforstudents WHERE uid = ?
+    `;
+
+    // Execute the query with the provided parameters
+    const [testdata] = await connection.query(query, [uid]);
+
+    if (testdata.length >= 1) {
+      console.log("Found test for UID:", uid);
+      res.status(200).json(testdata[0]);
+    } else {
+      // Preset not found
+      console.log("Test not found for UID:", uid);
+      res.status(404).json({ error: 'test not found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving test information:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// Update test
+app.put("/updatetestpaper/:tupcid/:classcode/:uid", async (req, res) => {
+  try {
+    const { tupcid, classcode, uid } = req.params; // Extract parameters from URL
+    const { data } = req.body; // An array of objects representing updated questions
+
+    // Update the questions field in the database based on tupcid, classcode, and uid
+    const updateQuery = `
+      UPDATE testforstudents
+      SET
+        questions = ?,
+        created_at = NOW() 
+      WHERE TUPCID = ? AND class_code = ? AND uid = ?;
+    `;
+
+    const updateValues = [
+      JSON.stringify(data), // Convert the array of question objects to JSON string
+      tupcid,
+      classcode,
+      uid,
+    ];
+
+    await connection.query(updateQuery, updateValues);
+
+    // Respond with a success message
+    res.status(200).json({ message: 'Data updated successfully' });
+  } catch (error) {
+    console.error('Error updating data:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
 
 
 
 
 
 
+//update data in preset and testpaper
 
+app.put(
+  "/updatetestpaperinpresetandtestpaper/:tupcids/:classcode/:testname/:testnumber",
+  async (req, res) => {
+    const {
+      tupcids,
+      classcode,
+      testname,
+      testnumber,
+    } = req.params;
 
+    const { data } = req.body;
 
+    try {
+      // Update data in the preset and testpaper tables based on the provided parameters
+      const presetQuery = `
+        UPDATE presets
+        SET questions = ?
+        WHERE TUPCID = ? AND class_code = ? AND test_name = ? AND test_number = ?
+      `;
 
+      const testpaperQuery = `
+        UPDATE testpapers
+        SET questions = ?
+        WHERE TUPCID = ? AND class_code = ? AND test_name = ? AND test_number = ?
+      `;
+
+      const values = [
+        JSON.stringify(data),
+        tupcids,
+        classcode,
+        testname,
+        testnumber,
+      ];
+
+      // Execute the queries
+      await connection.query(presetQuery, values);
+      await connection.query(testpaperQuery, values);
+
+      // Respond with a success message
+      res.status(200).json({ success: true, message: "Data updated successfully in preset_table and testpaper table." });
+    } catch (error) {
+      // Handle the error and respond with an error message
+      console.error("Error updating data:", error);
+      res.status(500).json({ success: false, error: "Internal Server Error", message: error.message });
+    }
+  }
+);
 
 
 

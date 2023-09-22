@@ -47,6 +47,7 @@ export default function FacultyClassTest() {
   const addTest = async () => {
     if (testName.trim() !== "") {
       try {
+        
         const response = await axios.post("http://localhost:3001/addtestandpreset", {
           TUPCID: tupcids,
           class_name: classname,
@@ -54,7 +55,7 @@ export default function FacultyClassTest() {
           class_code: classcode,
           test_name: testName,
           test_number: testNumber,
-          thumbnail: 0,
+          questions: null
         });
   
         if (response.status === 200 && response.data.success) {

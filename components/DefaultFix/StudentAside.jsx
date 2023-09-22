@@ -39,10 +39,10 @@ export default function StudentAside() {
       className={
         navs
           ? "custom-con2 w-50 px-0 bg-danger"
-          : "custom-con1 col-1 col-sm-2 px-sm-2 px-0 bg-danger"
+          : "custom-con1 col-1 col-md-2 px-sm-2 px-0 bg-danger"
       }
     >
-      <div className="d-flex flex-column align-items-center justify-content-between pt-2 text-white vh-100">
+      <div className="d-flex flex-column align-items-center justify-content-between pt-2 text-white custom-h3 vh-100">
         <div
           className={
             navs
